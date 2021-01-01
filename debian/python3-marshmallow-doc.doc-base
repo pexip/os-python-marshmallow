@@ -1,0 +1,10 @@
+Document: python3-marshmallow
+Title: Marshmallow Documentation
+Author: Steven Loria, Twilio Inc., Stuart Bishop, Benjamin Peterson
+Abstract: Documentation for the Marshmallow Python 3 library
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/python3-marshmallow/html/index.html
+Files: /usr/share/doc/python3-marshmallow/html/*.html
+

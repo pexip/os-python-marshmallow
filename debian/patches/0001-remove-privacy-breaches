@@ -1,0 +1,26 @@
+From: Federico Ceratto <federico@debian.org>
+Subject: Remove privacy breaches
+
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -13,9 +13,6 @@
+     "sphinx.ext.intersphinx",
+     "sphinx.ext.viewcode",
+     "alabaster",
+-    "sphinx_issues",
+-    "versionwarning.extension",
+-    "autodocsumm",
+ ]
+ 
+ primary_domain = "py"
+@@ -51,10 +48,6 @@
+     "logo": "marshmallow-logo.png",
+     "description": "Object serialization and deserialization, lightweight and fluffy.",
+     "description_font_style": "italic",
+-    "github_user": "marshmallow-code",
+-    "github_repo": "marshmallow",
+-    "github_banner": True,
+-    "github_type": "star",
+     "opencollective": "marshmallow",
+     "tidelift_url": (
+         "https://tidelift.com/subscription/pkg/pypi-marshmallow"

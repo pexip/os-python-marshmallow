@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=marshmallow
+export DH_VERBOSE=1
+export PYBUILD_TEST_PYTEST=1
+export PYBUILD_DISABLE_python2=test/test_py3
+
+%:
+	dh $@ --with python3,sphinxdoc --buildsystem=pybuild
+
+override_dh_auto_build:
+	dh_auto_build
+	PYTHONPATH=. http_proxy='http://127.0.0.1:9/' python3 -m sphinx -N -bhtml docs debian/html
+
+override_dh_installchangelogs:
+	dh_installchangelogs CHANGELOG.rst
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf debian/html .cache .pytest_cache

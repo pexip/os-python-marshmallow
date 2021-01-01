@@ -1,0 +1,69 @@
+python-marshmallow (3.10.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Fri, 01 Jan 2021 21:30:39 +0000
+
+python-marshmallow (3.7.1-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Sun, 26 Jul 2020 22:47:11 +0100
+
+python-marshmallow (3.6.1-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Mon, 15 Jun 2020 20:47:20 +0100
+
+python-marshmallow (3.6.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Sun, 17 May 2020 14:27:41 +0100
+
+python-marshmallow (3.5.1-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Sat, 21 Mar 2020 13:13:57 +0000
+
+python-marshmallow (3.4.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Thu, 06 Feb 2020 22:53:57 +0000
+
+python-marshmallow (3.3.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Sat, 28 Dec 2019 21:41:31 +0000
+
+python-marshmallow (3.2.2-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #942136)
+
+ -- Federico Ceratto <federico@debian.org>  Sun, 10 Nov 2019 22:15:58 +0000
+
+python-marshmallow (3.2.1-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * Use 'python3 -m sphinx' instead of sphinx-build for building docs
+
+  [ Federico Ceratto ]
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Tue, 29 Oct 2019 11:58:43 +0000
+
+python-marshmallow (3.0.0b14-1) unstable; urgency=high
+
+  * New upstream release (Closes: #909140), CVE-2018-17175
+
+ -- Federico Ceratto <federico@debian.org>  Tue, 18 Sep 2018 22:44:15 +0100
+
+python-marshmallow (3.0.0b3-1) unstable; urgency=low
+
+  * Initial package (Closes: #819648)
+
+ -- Federico Ceratto <federico@debian.org>  Sat, 23 Sep 2017 16:21:52 +0100
