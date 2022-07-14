@@ -17,7 +17,7 @@ class TestDeserializingNone:
     @pytest.mark.parametrize("FieldClass", ALL_FIELDS)
     def test_fields_allow_none_deserialize_to_none(self, FieldClass):
         field = FieldClass(allow_none=True)
-        field.deserialize(None) is None
+        assert field.deserialize(None) is None
 
     # https://github.com/marshmallow-code/marshmallow/issues/111
     @pytest.mark.parametrize("FieldClass", ALL_FIELDS)
@@ -27,9 +27,9 @@ class TestDeserializingNone:
             field.deserialize(None)
 
     def test_allow_none_is_true_if_missing_is_true(self):
-        field = fields.Field(missing=None)
+        field = fields.Field(load_default=None)
         assert field.allow_none is True
-        field.deserialize(None) is None
+        assert field.deserialize(None) is None
 
     def test_list_field_deserialize_none_to_none(self):
         field = fields.List(fields.String(allow_none=True), allow_none=True)
@@ -65,7 +65,7 @@ class TestFieldDeserialization:
     def test_float_field_overflow(self):
         field = fields.Float()
         with pytest.raises(ValidationError) as excinfo:
-            field.deserialize(2 ** 1024)
+            field.deserialize(2**1024)
         assert excinfo.value.args[0] == "Number too large."
 
     def test_integer_field_deserialization(self):
@@ -644,14 +644,14 @@ class TestFieldDeserialization:
         assert result.microseconds == 0
 
         field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS)
-        result = field.deserialize(10 ** 6 + 1)
+        result = field.deserialize(10**6 + 1)
         assert isinstance(result, dt.timedelta)
         assert result.days == 0
         assert result.seconds == 1
         assert result.microseconds == 1
 
         field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS)
-        result = field.deserialize(86400 * 10 ** 6 + 1)
+        result = field.deserialize(86400 * 10**6 + 1)
         assert isinstance(result, dt.timedelta)
         assert result.days == 1
         assert result.seconds == 0
@@ -823,6 +823,11 @@ class TestFieldDeserialization:
             field.deserialize("invalidemail")
         assert excinfo.value.args[0][0] == "Not a valid email address."
 
+        field = fields.Email(validate=[validate.Length(min=12)])
+        with pytest.raises(ValidationError) as excinfo:
+            field.deserialize("foo@bar.com")
+        assert excinfo.value.args[0][0] == "Shorter than minimum length 12."
+
     # regression test for https://github.com/marshmallow-code/marshmallow/issues/1400
     def test_email_field_non_list_validators(self):
         field = fields.Email(validate=(validate.Length(min=9),))
@@ -898,7 +903,8 @@ class TestFieldDeserialization:
         assert str(result) == ipv6_str
 
     @pytest.mark.parametrize(
-        "in_value", ["malformed", 123, b"\x01\x02\03", "192.168", "ff::aa:1::2"]
+        "in_value",
+        ["malformed", 123, b"\x01\x02\03", "192.168", "192.168.0.1/24", "ff::aa:1::2"],
     )
     def test_invalid_ip_deserialization(self, in_value):
         field = fields.IP()
@@ -916,7 +922,14 @@ class TestFieldDeserialization:
 
     @pytest.mark.parametrize(
         "in_value",
-        ["malformed", 123, b"\x01\x02\03", "192.168", "2a00:1450:4001:81d::200e"],
+        [
+            "malformed",
+            123,
+            b"\x01\x02\03",
+            "192.168",
+            "192.168.0.1/24",
+            "2a00:1450:4001:81d::200e",
+        ],
     )
     def test_invalid_ipv4_deserialization(self, in_value):
         field = fields.IPv4()
@@ -932,18 +945,91 @@ class TestFieldDeserialization:
         assert isinstance(result, ipaddress.IPv6Address)
         assert str(result) == ipv6_str
 
+    def test_ipinterface_field_deserialization(self):
+        field = fields.IPInterface()
+        ipv4interface_str = "140.82.118.3/24"
+        result = field.deserialize(ipv4interface_str)
+        assert isinstance(result, ipaddress.IPv4Interface)
+        assert str(result) == ipv4interface_str
+
+        ipv6interface_str = "2a00:1450:4001:824::200e/128"
+        result = field.deserialize(ipv6interface_str)
+        assert isinstance(result, ipaddress.IPv6Interface)
+        assert str(result) == ipv6interface_str
+
     @pytest.mark.parametrize(
-        "in_value", ["malformed", 123, b"\x01\x02\03", "ff::aa:1::2", "192.168.0.1"]
+        "in_value",
+        [
+            "malformed",
+            123,
+            b"\x01\x02\03",
+            "192.168",
+            "192.168.0.1/33",
+            "ff::aa:1::2",
+            "2a00:1450:4001:824::200e/129",
+        ],
     )
-    def test_invalid_ipv6_deserialization(self, in_value):
-        field = fields.IPv6()
+    def test_invalid_ipinterface_deserialization(self, in_value):
+        field = fields.IPInterface()
         with pytest.raises(ValidationError) as excinfo:
             field.deserialize(in_value)
 
-        assert excinfo.value.args[0] == "Not a valid IPv6 address."
+        assert excinfo.value.args[0] == "Not a valid IP interface."
+
+    def test_ipv4interface_field_deserialization(self):
+        field = fields.IPv4Interface()
+        ipv4interface_str = "140.82.118.3/24"
+        result = field.deserialize(ipv4interface_str)
+        assert isinstance(result, ipaddress.IPv4Interface)
+        assert str(result) == ipv4interface_str
+
+    @pytest.mark.parametrize(
+        "in_value",
+        [
+            "malformed",
+            123,
+            b"\x01\x02\03",
+            "192.168",
+            "192.168.0.1/33",
+            "2a00:1450:4001:81d::200e",
+            "2a00:1450:4001:824::200e/129",
+        ],
+    )
+    def test_invalid_ipv4interface_deserialization(self, in_value):
+        field = fields.IPv4Interface()
+        with pytest.raises(ValidationError) as excinfo:
+            field.deserialize(in_value)
+
+        assert excinfo.value.args[0] == "Not a valid IPv4 interface."
+
+    def test_ipv6interface_field_deserialization(self):
+        field = fields.IPv6Interface()
+        ipv6interface_str = "2a00:1450:4001:824::200e/128"
+        result = field.deserialize(ipv6interface_str)
+        assert isinstance(result, ipaddress.IPv6Interface)
+        assert str(result) == ipv6interface_str
+
+    @pytest.mark.parametrize(
+        "in_value",
+        [
+            "malformed",
+            123,
+            b"\x01\x02\03",
+            "ff::aa:1::2",
+            "192.168.0.1",
+            "192.168.0.1/24",
+            "2a00:1450:4001:824::200e/129",
+        ],
+    )
+    def test_invalid_ipv6interface_deserialization(self, in_value):
+        field = fields.IPv6Interface()
+        with pytest.raises(ValidationError) as excinfo:
+            field.deserialize(in_value)
+
+        assert excinfo.value.args[0] == "Not a valid IPv6 interface."
 
     def test_deserialization_function_must_be_callable(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             fields.Function(lambda x: None, deserialize="notvalid")
 
     def test_method_field_deserialization_is_noop_by_default(self):
@@ -973,19 +1059,17 @@ class TestFieldDeserialization:
         class BadSchema(Schema):
             uppername = fields.Method("uppercase_name", deserialize="lowercase_name")
 
-        s = BadSchema()
-        with pytest.raises(ValueError):
-            s.fields["uppername"].deserialize("STEVE")
+        with pytest.raises(AttributeError):
+            BadSchema()
 
     def test_method_field_deserialize_only(self):
         class MethodDeserializeOnly(Schema):
+            name = fields.Method(deserialize="lowercase_name")
+
             def lowercase_name(self, value):
                 return value.lower()
 
-        m = fields.Method(deserialize="lowercase_name")
-        m.parent = MethodDeserializeOnly()
-
-        assert m.deserialize("ALEC") == "alec"
+        assert MethodDeserializeOnly().load({"name": "ALEC"})["name"] == "alec"
 
     def test_datetime_list_field_deserialization(self):
         dtimes = dt.datetime.now(), dt.datetime.now(), dt.datetime.utcnow()
@@ -1429,7 +1513,7 @@ class TestSchemaDeserialization:
 
         class AliasingUserSerializer(Schema):
             name = fields.String()
-            birthdate = fields.DateTime(missing=bdate)
+            birthdate = fields.DateTime(load_default=bdate)
 
         data = {"name": "Mick"}
         result = AliasingUserSerializer().load(data)
@@ -1441,7 +1525,7 @@ class TestSchemaDeserialization:
 
         class AliasingUserSerializer(Schema):
             name = fields.String()
-            birthdate = fields.DateTime(missing=lambda: bdate)
+            birthdate = fields.DateTime(load_default=lambda: bdate)
 
         data = {"name": "Mick"}
         result = AliasingUserSerializer().load(data)
@@ -1451,7 +1535,7 @@ class TestSchemaDeserialization:
     def test_deserialize_with_missing_param_none(self):
         class AliasingUserSerializer(Schema):
             name = fields.String()
-            years = fields.Integer(missing=None, allow_none=True)
+            years = fields.Integer(load_default=None, allow_none=True)
 
         data = {"name": "Mick"}
         result = AliasingUserSerializer().load(data)
@@ -1728,6 +1812,22 @@ class TestSchemaDeserialization:
         # without any validation.
         data = MySchema(unknown=INCLUDE).load({"foo": "LOL"})
         assert data["foo"] == "LOL"
+
+    def test_unknown_fields_do_not_unpack_dotted_names(self):
+        class MySchema(Schema):
+            class Meta:
+                unknown = INCLUDE
+
+            foo = fields.Str()
+            bar = fields.Str(data_key="bar.baz")
+
+        # dotted names are still supported
+        data = MySchema().load({"foo": "hi", "bar.baz": "okay"})
+        assert data == {"foo": "hi", "bar": "okay"}
+
+        # but extra keys included via unknown=INCLUDE are not transformed into nested dicts
+        data = MySchema().load({"foo": "hi", "bar.baz": "okay", "alpha.beta": "woah!"})
+        assert data == {"foo": "hi", "bar": "okay", "alpha.beta": "woah!"}
 
 
 validators_gen = (func for func in [lambda x: x <= 24, lambda x: 18 <= x])

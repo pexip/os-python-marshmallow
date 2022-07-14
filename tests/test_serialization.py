@@ -112,7 +112,7 @@ class TestFieldSerialization:
         assert "FOOBAR" == field.serialize("key", user)
 
     def test_function_field_passed_uncallable_object(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             fields.Function("uncallable")
 
     def test_integer_field(self, user):
@@ -125,14 +125,14 @@ class TestFieldSerialization:
 
     def test_integer_field_default(self, user):
         user.age = None
-        field = fields.Integer(default=0)
+        field = fields.Integer(dump_default=0)
         assert field.serialize("age", user) is None
         # missing
         assert field.serialize("age", {}) == 0
 
     def test_integer_field_default_set_to_none(self, user):
         user.age = None
-        field = fields.Integer(default=None)
+        field = fields.Integer(dump_default=None)
         assert field.serialize("age", user) is None
 
     def test_uuid_field(self, user):
@@ -193,6 +193,66 @@ class TestFieldSerialization:
         field_exploded = fields.IPv6(exploded=True)
         assert isinstance(field_exploded.serialize("ipv6", user), str)
         assert field_exploded.serialize("ipv6", user) == ipv6_exploded_string
+
+    def test_ip_interface_field(self, user):
+
+        ipv4interface_string = "192.168.0.1/24"
+        ipv6interface_string = "ffff::ffff/128"
+        ipv6interface_exploded_string = ipaddress.ip_interface(
+            "ffff::ffff/128"
+        ).exploded
+
+        user.ipv4interface = ipaddress.ip_interface(ipv4interface_string)
+        user.ipv6interface = ipaddress.ip_interface(ipv6interface_string)
+        user.empty_ipinterface = None
+
+        field_compressed = fields.IPInterface()
+        assert isinstance(field_compressed.serialize("ipv4interface", user), str)
+        assert field_compressed.serialize("ipv4interface", user) == ipv4interface_string
+        assert isinstance(field_compressed.serialize("ipv6interface", user), str)
+        assert field_compressed.serialize("ipv6interface", user) == ipv6interface_string
+        assert field_compressed.serialize("empty_ipinterface", user) is None
+
+        field_exploded = fields.IPInterface(exploded=True)
+        assert isinstance(field_exploded.serialize("ipv6interface", user), str)
+        assert (
+            field_exploded.serialize("ipv6interface", user)
+            == ipv6interface_exploded_string
+        )
+
+    def test_ipv4_interface_field(self, user):
+
+        ipv4interface_string = "192.168.0.1/24"
+
+        user.ipv4interface = ipaddress.ip_interface(ipv4interface_string)
+        user.empty_ipinterface = None
+
+        field = fields.IPv4Interface()
+        assert isinstance(field.serialize("ipv4interface", user), str)
+        assert field.serialize("ipv4interface", user) == ipv4interface_string
+        assert field.serialize("empty_ipinterface", user) is None
+
+    def test_ipv6_interface_field(self, user):
+
+        ipv6interface_string = "ffff::ffff/128"
+        ipv6interface_exploded_string = ipaddress.ip_interface(
+            "ffff::ffff/128"
+        ).exploded
+
+        user.ipv6interface = ipaddress.ip_interface(ipv6interface_string)
+        user.empty_ipinterface = None
+
+        field_compressed = fields.IPv6Interface()
+        assert isinstance(field_compressed.serialize("ipv6interface", user), str)
+        assert field_compressed.serialize("ipv6interface", user) == ipv6interface_string
+        assert field_compressed.serialize("empty_ipinterface", user) is None
+
+        field_exploded = fields.IPv6Interface(exploded=True)
+        assert isinstance(field_exploded.serialize("ipv6interface", user), str)
+        assert (
+            field_exploded.serialize("ipv6interface", user)
+            == ipv6interface_exploded_string
+        )
 
     def test_decimal_field(self, user):
         user.m1 = 12
@@ -355,10 +415,6 @@ class TestFieldSerialization:
         assert field.serialize("falsy", user) is False
         assert field.serialize("none", user) is None
 
-    def test_function_with_uncallable_param(self):
-        with pytest.raises(ValueError):
-            fields.Function("uncallable")
-
     def test_email_field_serialize_none(self, user):
         user.email = None
         field = fields.Email()
@@ -409,9 +465,8 @@ class TestFieldSerialization:
         class BadSerializer(Schema):
             bad_field = fields.Method("invalid")
 
-        u = User("Foo")
-        with pytest.raises(ValueError):
-            BadSerializer().dump(u)
+        with pytest.raises(AttributeError):
+            BadSerializer()
 
     def test_method_field_passed_serialize_only_is_dump_only(self, user):
         field = fields.Method(serialize="method")
@@ -428,9 +483,8 @@ class TestFieldSerialization:
             foo = "not callable"
             bad_field = fields.Method("foo")
 
-        u = User("Foo")
-        with pytest.raises(ValueError):
-            BadSerializer().dump(u)
+        with pytest.raises(TypeError):
+            BadSerializer()
 
     # https://github.com/marshmallow-code/marshmallow/issues/395
     def test_method_field_does_not_swallow_attribute_error(self):
@@ -463,7 +517,7 @@ class TestFieldSerialization:
             name = fields.Field(data_key="")
 
         schema = MySchema()
-        schema.dump({"name": "Grace"}) == {"": "Grace"}
+        assert schema.dump({"name": "Grace"}) == {"": "Grace"}
 
     def test_serialize_with_attribute_and_data_key_uses_data_key(self):
         class ConfusedDumpToAndAttributeSerializer(Schema):
@@ -540,7 +594,7 @@ class TestFieldSerialization:
         assert field.serialize("name", user) is None
 
     def test_string_field_default_to_empty_string(self, user):
-        field = fields.String(default="")
+        field = fields.String(dump_default="")
         assert field.serialize("notfound", {}) == ""
 
     def test_time_field(self, user):
@@ -653,10 +707,19 @@ class TestFieldSerialization:
         field = fields.TimeDelta(fields.TimeDelta.MILLISECONDS)
         assert field.serialize("d6", user) == d6_seconds * 1000 + 1
         field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS)
-        assert field.serialize("d6", user) == d6_seconds * 10 ** 6 + 1000 + 1
+        assert field.serialize("d6", user) == d6_seconds * 10**6 + 1000 + 1
 
         user.d7 = None
         assert field.serialize("d7", user) is None
+
+        # https://github.com/marshmallow-code/marshmallow/issues/1856
+        user.d8 = dt.timedelta(milliseconds=345)
+        field = fields.TimeDelta(fields.TimeDelta.MILLISECONDS)
+        assert field.serialize("d8", user) == 345
+
+        user.d9 = dt.timedelta(milliseconds=1999)
+        field = fields.TimeDelta(fields.TimeDelta.SECONDS)
+        assert field.serialize("d9", user) == 1
 
     def test_datetime_list_field(self):
         obj = DateTimeList([dt.datetime.utcnow(), dt.datetime.now()])
@@ -803,7 +866,7 @@ class TestSchemaSerialization:
     def test_serialize_with_missing_param_value(self):
         class AliasingUserSerializer(Schema):
             name = fields.String()
-            birthdate = fields.DateTime(default=dt.datetime(2017, 9, 29))
+            birthdate = fields.DateTime(dump_default=dt.datetime(2017, 9, 29))
 
         data = {"name": "Mick"}
         result = AliasingUserSerializer().dump(data)
@@ -813,7 +876,7 @@ class TestSchemaSerialization:
     def test_serialize_with_missing_param_callable(self):
         class AliasingUserSerializer(Schema):
             name = fields.String()
-            birthdate = fields.DateTime(default=lambda: dt.datetime(2017, 9, 29))
+            birthdate = fields.DateTime(dump_default=lambda: dt.datetime(2017, 9, 29))
 
         data = {"name": "Mick"}
         result = AliasingUserSerializer().dump(data)

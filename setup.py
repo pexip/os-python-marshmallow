@@ -4,17 +4,17 @@ from setuptools import setup, find_packages
 EXTRAS_REQUIRE = {
     "tests": ["pytest", "pytz", "simplejson"],
     "lint": [
-        "mypy==0.790",
-        "flake8==3.8.4",
-        "flake8-bugbear==20.11.1",
+        "mypy==0.940",
+        "flake8==4.0.1",
+        "flake8-bugbear==22.1.11",
         "pre-commit~=2.4",
     ],
     "docs": [
-        "sphinx==3.3.1",
-        "sphinx-issues==1.2.0",
+        "sphinx==4.4.0",
+        "sphinx-issues==3.0.1",
         "alabaster==0.7.12",
         "sphinx-version-warning==1.1.2",
-        "autodocsumm==0.2.2",
+        "autodocsumm==0.2.7",
     ],
 }
 EXTRAS_REQUIRE["dev"] = EXTRAS_REQUIRE["tests"] + EXTRAS_REQUIRE["lint"] + ["tox"]
@@ -58,6 +58,7 @@ setup(
     package_dir={"": "src"},
     package_data={"marshmallow": ["py.typed"]},
     include_package_data=True,
+    install_requires=["packaging"],
     extras_require=EXTRAS_REQUIRE,
     license="MIT",
     zip_safe=False,
@@ -72,17 +73,16 @@ setup(
         "validation",
         "schema",
     ],
-    python_requires=">=3.5",
+    python_requires=">=3.7",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     test_suite="tests",
     project_urls={

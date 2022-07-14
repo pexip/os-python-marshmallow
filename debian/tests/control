@@ -1,0 +1,7 @@
+Tests: upstream
+Depends:
+ python3-all,
+ python3-marshmallow,
+ python3-pytest,
+ python3-simplejson,
+ python3-tz,
