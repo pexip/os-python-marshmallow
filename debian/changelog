@@ -1,4 +1,4 @@
-python-marshmallow (3.10.0-1pexip1) pexip; urgency=medium
+python-marshmallow (3.10.0-1pexip1) pexip-bullseye; urgency=medium
 
   * Prepare Pexip packaging
 
