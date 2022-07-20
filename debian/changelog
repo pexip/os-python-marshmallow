@@ -1,3 +1,9 @@
+python-marshmallow (3.10.0-1pexip1) pexip; urgency=medium
+
+  * Prepare Pexip packaging
+
+ -- Mark Hymers <mark.hymers@pexip.com>  Wed, 20 Jul 2022 13:29:38 +0100
+
 python-marshmallow (3.10.0-1) unstable; urgency=medium
 
   * New upstream release
