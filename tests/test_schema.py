@@ -326,7 +326,7 @@ def test_loads_deserializes_from_json():
 
 def test_serializing_none():
     class MySchema(Schema):
-        id = fields.Str(default="no-id")
+        id = fields.Str(dump_default="no-id")
         num = fields.Int()
         name = fields.Str()
 
@@ -1995,7 +1995,7 @@ class TestNestedSchema:
 
     def test_nested_none(self):
         class BlogDefaultSchema(Schema):
-            user = fields.Nested(UserSchema, default=0)
+            user = fields.Nested(UserSchema, dump_default=0)
 
         b = Blog("Just the default blog", user=None)
         data = BlogDefaultSchema().dump(b)
@@ -2592,9 +2592,10 @@ def test_serializer_can_specify_nested_object_as_attribute(blog):
 
 class TestFieldInheritance:
     def test_inherit_fields_from_schema_subclass(self):
-        expected = OrderedDict(
-            [("field_a", fields.Number()), ("field_b", fields.Number())]
-        )
+        expected = {
+            "field_a": fields.Number(),
+            "field_b": fields.Number(),
+        }
 
         class SerializerA(Schema):
             field_a = expected["field_a"]
@@ -2605,9 +2606,10 @@ class TestFieldInheritance:
         assert SerializerB._declared_fields == expected
 
     def test_inherit_fields_from_non_schema_subclass(self):
-        expected = OrderedDict(
-            [("field_a", fields.Number()), ("field_b", fields.Number())]
-        )
+        expected = {
+            "field_a": fields.Number(),
+            "field_b": fields.Number(),
+        }
 
         class PlainBaseClass:
             field_a = expected["field_a"]
@@ -2622,14 +2624,12 @@ class TestFieldInheritance:
         assert SerializerB2._declared_fields == expected
 
     def test_inheritance_follows_mro(self):
-        expected = OrderedDict(
-            [
-                ("field_a", fields.String()),
-                ("field_c", fields.String()),
-                ("field_b", fields.String()),
-                ("field_d", fields.String()),
-            ]
-        )
+        expected = {
+            "field_a": fields.String(),
+            "field_b": fields.String(),
+            "field_c": fields.String(),
+            "field_d": fields.String(),
+        }
         # Diamond inheritance graph
         # MRO: D -> B -> C -> A
 
@@ -2755,8 +2755,8 @@ class TestDefaults:
         list_no_default = fields.List(fields.Str, allow_none=True)
         nested_no_default = fields.Nested(UserSchema, many=True, allow_none=True)
 
-        int_with_default = fields.Int(allow_none=True, default=42)
-        str_with_default = fields.Str(allow_none=True, default="foo")
+        int_with_default = fields.Int(allow_none=True, dump_default=42)
+        str_with_default = fields.Str(allow_none=True, dump_default="foo")
 
     @pytest.fixture()
     def schema(self):
@@ -2793,7 +2793,7 @@ class TestDefaults:
         assert errors == {}
         result = schema.dump(data)
         for key in data.keys():
-            msg = "result[{!r}] should be None".format(key)
+            msg = f"result[{key!r}] should be None"
             assert result[key] is None, msg
 
     def test_default_and_value_missing(self, schema, data):
@@ -2806,7 +2806,7 @@ class TestDefaults:
     def test_loading_none(self, schema, data):
         result = schema.load(data)
         for key in data.keys():
-            result[key] is None
+            assert result[key] is None
 
     def test_missing_inputs_are_excluded_from_load_output(self, schema, data):
         for key in [

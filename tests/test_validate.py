@@ -782,12 +782,12 @@ def test_containsnoneof_error_message():
 
 
 def test_containsnoneof_in_list():
-    validate.ContainsNoneOf([])([]) == []
-    validate.ContainsNoneOf([])([1, 2, 3]) == [1, 2, 3]
-    validate.ContainsNoneOf([4])([1, 2, 3]) == [1, 2, 3]
-    validate.ContainsNoneOf([2])([1, 3, 4]) == [1, 3, 4]
-    validate.ContainsNoneOf([1, 2, 3])([4]) == [4]
-    validate.ContainsNoneOf([4])([1, 1, 1, 1]) == [1]
+    assert validate.ContainsNoneOf([])([]) == []
+    assert validate.ContainsNoneOf([])([1, 2, 3]) == [1, 2, 3]
+    assert validate.ContainsNoneOf([4])([1, 2, 3]) == [1, 2, 3]
+    assert validate.ContainsNoneOf([2])([1, 3, 4]) == [1, 3, 4]
+    assert validate.ContainsNoneOf([1, 2, 3])([4]) == [4]
+    assert validate.ContainsNoneOf([4])([1, 1, 1, 1]) == [1, 1, 1, 1]
 
     with pytest.raises(ValidationError):
         validate.ContainsNoneOf([1])([1, 2, 3])
@@ -828,12 +828,12 @@ def test_containsnoneof_unhashable_types():
 
 
 def test_containsnoneof_in_tuple():
-    validate.ContainsNoneOf(())(()) == ()
-    validate.ContainsNoneOf(())((1, 2, 3)) == (1, 2, 3)
-    validate.ContainsNoneOf((4,))((1, 2, 3)) == (1, 2, 3)
-    validate.ContainsNoneOf((2,))((1, 3, 4)) == (1, 3, 4)
-    validate.ContainsNoneOf((1, 2, 3))((4,)) == (4,)
-    validate.ContainsNoneOf((4,))((1, 1, 1, 1)) == (1,)
+    assert validate.ContainsNoneOf(())(()) == ()
+    assert validate.ContainsNoneOf(())((1, 2, 3)) == (1, 2, 3)
+    assert validate.ContainsNoneOf((4,))((1, 2, 3)) == (1, 2, 3)
+    assert validate.ContainsNoneOf((2,))((1, 3, 4)) == (1, 3, 4)
+    assert validate.ContainsNoneOf((1, 2, 3))((4,)) == (4,)
+    assert validate.ContainsNoneOf((4,))((1, 1, 1, 1)) == (1, 1, 1, 1)
 
     with pytest.raises(ValidationError):
         validate.ContainsNoneOf((1,))((1, 2, 3))
@@ -849,12 +849,12 @@ def test_containsnoneof_in_tuple():
 
 
 def test_containsnoneof_in_string():
-    validate.ContainsNoneOf("")("") == ""
-    validate.ContainsNoneOf("")("abc") == "abc"
-    validate.ContainsNoneOf("d")("abc") == "abc"
-    validate.ContainsNoneOf("b")("acd") == "acd"
-    validate.ContainsNoneOf("abc")("d") == "d"
-    validate.ContainsNoneOf("d")("aaaa") == "a"
+    assert validate.ContainsNoneOf("")("") == ""
+    assert validate.ContainsNoneOf("")("abc") == "abc"
+    assert validate.ContainsNoneOf("d")("abc") == "abc"
+    assert validate.ContainsNoneOf("b")("acd") == "acd"
+    assert validate.ContainsNoneOf("abc")("d") == "d"
+    assert validate.ContainsNoneOf("d")("aaaa") == "aaaa"
 
     with pytest.raises(ValidationError):
         validate.ContainsNoneOf("a")("abc")
@@ -890,3 +890,25 @@ def test_containsnoneof_mixing_types():
 
     with pytest.raises(ValidationError):
         validate.ContainsNoneOf([1, 2, 3])((1,))
+
+
+def is_even(value):
+    if value % 2 != 0:
+        raise ValidationError("Not an even value.")
+
+
+def test_and():
+    validator = validate.And(validate.Range(min=0), is_even)
+    assert validator(2)
+    with pytest.raises(ValidationError) as excinfo:
+        validator(-1)
+    errors = excinfo.value.messages
+    assert errors == ["Must be greater than or equal to 0.", "Not an even value."]
+
+    validator_with_composition = validate.And(validator, validate.Range(max=6))
+    assert validator_with_composition(4)
+    with pytest.raises(ValidationError) as excinfo:
+        validator_with_composition(7)
+
+    errors = excinfo.value.messages
+    assert errors == ["Not an even value.", "Must be less than or equal to 6."]

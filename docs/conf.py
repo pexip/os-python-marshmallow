@@ -1,6 +1,6 @@
-from collections import OrderedDict
 import sys
 import os
+import time
 import datetime as dt
 
 import alabaster
@@ -27,13 +27,18 @@ issues_github_path = "marshmallow-code/marshmallow"
 
 templates_path = ["_templates"]
 
+# Use SOURCE_DATE_EPOCH for reproducible build output https://reproducible-builds.org/docs/source-date-epoch/
+build_date = dt.datetime.utcfromtimestamp(
+    int(os.environ.get("SOURCE_DATE_EPOCH", time.time()))
+)
+
 source_suffix = ".rst"
 master_doc = "index"
 
 project = "marshmallow"
 copyright = (
     ' {:%Y} <a href="https://stevenloria.com">Steven Loria</a> and contributors'.format(
-        dt.datetime.utcfromtimestamp(os.path.getmtime("../CHANGELOG.rst"))
+        build_date
     )
 )
 
@@ -67,17 +72,12 @@ html_theme_options = {
     "warn_bg": "#FFC",
     "warn_border": "#EEE",
     # Used to populate the useful-links.html template
-    "extra_nav_links": OrderedDict(
-        [
-            ("marshmallow @ PyPI", "https://pypi.python.org/pypi/marshmallow"),
-            ("marshmallow @ GitHub", "https://github.com/marshmallow-code/marshmallow"),
-            ("Issue Tracker", "https://github.com/marshmallow-code/marshmallow/issues"),
-            (
-                "Ecosystem",
-                "https://github.com/marshmallow-code/marshmallow/wiki/Ecosystem",
-            ),
-        ]
-    ),
+    "extra_nav_links": {
+        "marshmallow @ PyPI": "https://pypi.python.org/pypi/marshmallow",
+        "marshmallow @ GitHub": "https://github.com/marshmallow-code/marshmallow",
+        "Issue Tracker": "https://github.com/marshmallow-code/marshmallow/issues",
+        "Ecosystem": "https://github.com/marshmallow-code/marshmallow/wiki/Ecosystem",
+    },
 }
 
 html_sidebars = {

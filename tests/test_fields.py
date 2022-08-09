@@ -30,12 +30,12 @@ def test_field_aliases(alias, field):
 class TestField:
     def test_repr(self):
         default = "œ∑´"
-        field = fields.Field(default=default, attribute=None)
+        field = fields.Field(dump_default=default, attribute=None)
         assert repr(field) == (
-            "<fields.Field(default={0!r}, attribute=None, "
+            "<fields.Field(dump_default={0!r}, attribute=None, "
             "validate=None, required=False, "
             "load_only=False, dump_only=False, "
-            "missing={missing}, allow_none=False, "
+            "load_default={missing}, allow_none=False, "
             "error_messages={error_messages})>".format(
                 default, missing=missing, error_messages=field.error_messages
             )
@@ -49,9 +49,9 @@ class TestField:
 
     def test_error_raised_if_missing_is_set_on_required_field(self):
         with pytest.raises(
-            ValueError, match="'missing' must not be set for required fields"
+            ValueError, match="'load_default' must not be set for required fields"
         ):
-            fields.Field(required=True, missing=42)
+            fields.Field(required=True, load_default=42)
 
     def test_custom_field_receives_attr_and_obj(self):
         class MyField(fields.Field):
@@ -187,15 +187,24 @@ class TestParentAndName:
         for field_name in ("bar", "qux"):
             assert schema.fields[field_name].tuple_fields[0].format == "iso8601"
 
+    # Regression test for https://github.com/marshmallow-code/marshmallow/issues/1808
+    def test_field_named_parent_has_root(self, schema):
+        class MySchema(Schema):
+            parent = fields.Field()
+
+        schema = MySchema()
+        assert schema.fields["parent"].root == schema
+
 
 class TestMetadata:
     @pytest.mark.parametrize("FieldClass", ALL_FIELDS)
     def test_extra_metadata_may_be_added_to_field(self, FieldClass):  # noqa
-        field = FieldClass(description="Just a normal field.")
+        with pytest.warns(DeprecationWarning):
+            field = FieldClass(description="Just a normal field.")
         assert field.metadata["description"] == "Just a normal field."
         field = FieldClass(
             required=True,
-            default=None,
+            dump_default=None,
             validate=lambda v: True,
             metadata={"description": "foo", "widget": "select"},
         )
@@ -211,12 +220,68 @@ class TestMetadata:
         with pytest.warns(DeprecationWarning):
             field = FieldClass(
                 required=True,
-                default=None,
+                dump_default=None,
                 validate=lambda v: True,
                 description="foo",
                 metadata={"widget": "select"},
             )
         assert field.metadata == {"description": "foo", "widget": "select"}
+
+
+class TestDeprecatedDefaultAndMissing:
+    @pytest.mark.parametrize("FieldClass", ALL_FIELDS)
+    def test_load_default_in_deprecated_style_warns(self, FieldClass):
+        # in constructor
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'missing' argument to fields is deprecated. "
+            "Use 'load_default' instead.",
+        ):
+            FieldClass(missing=None)
+
+        # via attribute
+        myfield = FieldClass(load_default=1)
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'missing' attribute of fields is deprecated. "
+            "Use 'load_default' instead.",
+        ):
+            assert myfield.missing == 1
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'missing' attribute of fields is deprecated. "
+            "Use 'load_default' instead.",
+        ):
+            myfield.missing = 0
+        # but setting it worked
+        assert myfield.load_default == 0
+
+    @pytest.mark.parametrize("FieldClass", ALL_FIELDS)
+    def test_dump_default_in_deprecated_style_warns(self, FieldClass):
+        # in constructor
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'default' argument to fields is deprecated. "
+            "Use 'dump_default' instead.",
+        ):
+            FieldClass(default=None)
+
+        # via attribute
+        myfield = FieldClass(dump_default=1)
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'default' attribute of fields is deprecated. "
+            "Use 'dump_default' instead.",
+        ):
+            assert myfield.default == 1
+        with pytest.warns(
+            DeprecationWarning,
+            match="The 'default' attribute of fields is deprecated. "
+            "Use 'dump_default' instead.",
+        ):
+            myfield.default = 0
+        # but setting it worked
+        assert myfield.dump_default == 0
 
 
 class TestErrorMessages:
@@ -270,6 +335,25 @@ class TestNestedField:
     def test_nested_only_and_exclude_as_string(self, param):
         with pytest.raises(StringNotCollectionError):
             fields.Nested(Schema, **{param: "foo"})
+
+    @pytest.mark.parametrize(
+        "nested_value",
+        [
+            {"hello": fields.String()},
+            lambda: {"hello": fields.String()},
+        ],
+    )
+    def test_nested_instantiation_from_dict(self, nested_value):
+        class MySchema(Schema):
+            nested = fields.Nested(nested_value)
+
+        schema = MySchema()
+
+        ret = schema.load({"nested": {"hello": "world"}})
+        assert ret == {"nested": {"hello": "world"}}
+
+        with pytest.raises(ValidationError):
+            schema.load({"nested": {"x": 1}})
 
     @pytest.mark.parametrize("schema_unknown", (EXCLUDE, INCLUDE, RAISE))
     @pytest.mark.parametrize("field_unknown", (None, EXCLUDE, INCLUDE, RAISE))
