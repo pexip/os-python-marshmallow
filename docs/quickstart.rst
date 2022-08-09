@@ -243,7 +243,10 @@ There are a number of built-in validators in the :ref:`marshmallow.validate <api
         #  'permission': ['Must be one of: read, write, admin.']}
 
 
-You may implement your own validation functions.
+You may implement your own validators.
+A validator is a callable that accepts a single argument, the value to validate.
+If validation fails, the callable should raise a :exc:`ValidationError <marshmallow.exceptions.ValidationError>`
+with a useful error message or return ``False`` (for a generic error message).
 
 .. code-block:: python
 
@@ -373,14 +376,14 @@ You can ignore missing fields entirely by setting ``partial=True``.
 Specifying Defaults
 -------------------
 
-`missing` specifies the default deserialization value for a field.
-Likewise, `default` specifies the default serialization value.
+`load_default` specifies the default deserialization value for a field.
+Likewise, `dump_default` specifies the default serialization value.
 
 .. code-block:: python
 
     class UserSchema(Schema):
-        id = fields.UUID(missing=uuid.uuid1)
-        birthdate = fields.DateTime(default=dt.datetime(2017, 9, 29))
+        id = fields.UUID(load_default=uuid.uuid1)
+        birthdate = fields.DateTime(dump_default=dt.datetime(2017, 9, 29))
 
 
     UserSchema().load({})

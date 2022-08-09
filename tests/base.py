@@ -27,6 +27,12 @@ ALL_FIELDS = [
     fields.Email,
     fields.UUID,
     fields.Decimal,
+    fields.IP,
+    fields.IPv4,
+    fields.IPv6,
+    fields.IPInterface,
+    fields.IPv4Interface,
+    fields.IPv6Interface,
 ]
 
 ##### Custom asserts #####
@@ -101,7 +107,7 @@ class User:
         return dt.datetime(2013, 11, 24) - self.created
 
     def __repr__(self):
-        return "<User {}>".format(self.name)
+        return f"<User {self.name}>"
 
 
 class Blog:
@@ -124,7 +130,7 @@ class DummyModel:
         return self.foo == other.foo
 
     def __str__(self):
-        return "bar {}".format(self.foo)
+        return f"bar {self.foo}"
 
 
 ###### Schemas #####
@@ -149,7 +155,7 @@ def get_lowername(obj):
 
 class UserSchema(Schema):
     name = fields.String()
-    age = fields.Float()
+    age = fields.Float()  # type: fields.Field
     created = fields.DateTime()
     created_formatted = fields.DateTime(
         format="%Y-%m-%d", attribute="created", dump_only=True
@@ -157,12 +163,12 @@ class UserSchema(Schema):
     created_iso = fields.DateTime(format="iso", attribute="created", dump_only=True)
     updated = fields.DateTime()
     species = fields.String(attribute="SPECIES")
-    id = fields.String(default="no-id")
+    id = fields.String(dump_default="no-id")
     uppername = Uppercased(attribute="name", dump_only=True)
     homepage = fields.Url()
     email = fields.Email()
     balance = fields.Decimal()
-    is_old = fields.Method("get_is_old")
+    is_old = fields.Method("get_is_old")  # type: fields.Field
     lowername = fields.Function(get_lowername)
     registered = fields.Boolean()
     hair_colors = fields.List(fields.Raw)
@@ -261,7 +267,7 @@ class UserAdditionalSchema(Schema):
 
 
 class UserIntSchema(UserSchema):
-    age = fields.Integer()  # type: ignore
+    age = fields.Integer()
 
 
 class UserFloatStringSchema(UserSchema):
@@ -269,7 +275,7 @@ class UserFloatStringSchema(UserSchema):
 
 
 class ExtendedUserSchema(UserSchema):
-    is_old = fields.Boolean()  # type: ignore
+    is_old = fields.Boolean()
 
 
 class UserRelativeUrlSchema(UserSchema):

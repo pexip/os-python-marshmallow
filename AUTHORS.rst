@@ -157,3 +157,14 @@ Contributors (chronological)
 - Nadège Michel `@nadege <https://github.com/nadege>`_
 - Tamara `@infinityxxx <https://github.com/infinityxxx>`_
 - Stephen Rosen `@sirosen <https://github.com/sirosen>`_
+- Vladimir Mikhaylov `@vemikhaylov <https://github.com/vemikhaylov>`_
+- Stephen Eaton `@madeinoz67 <https://github.com/madeinoz67>`_
+- Antonio Lassandro `@lassandroan <https://github.com/lassandroan>`_
+- Javier Fernández `@jfernandz <https://github.com/jfernandz>`_
+- Michael Dimchuk  `@michaeldimchuk <https://github.com/michaeldimchuk>`_
+- Jochen Kupperschmidt  `@homeworkprod <https://github.com/homeworkprod>`_
+- `@yourun-proger <https://github.com/yourun-proger>`_
+- Ryan Morehart `@traherom <https://github.com/traherom>`_
+- Ben Windsor `@bwindsor <https://github.com/bwindsor>`_
+- Kevin Kirsche `@kkirsche <https://github.com/kkirsche>`_
+- Isira Seneviratne `@Isira-Seneviratne <https://github.com/Isira-Seneviratne>`_
