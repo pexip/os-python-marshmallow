@@ -1,12 +1,59 @@
 Changelog
 ---------
 
+3.18.0 (2022-09-15)
+*******************
+
+Features:
+
+- Add ``Enum`` field (:pr:`2017`) and (:pr:`2044`).
+
+Bug fixes:
+
+- Fix typing in ``Field._serialize`` signature (:pr:`2046`).
+
+3.17.1 (2022-08-22)
+*******************
+
+Bug fixes:
+
+- Add return type to ``fields.Email.__init__`` (:pr:`2018`).
+  Thanks :user:`kkirsche` for the PR.
+- Add missing type hint to IPInterface __init__ (:pr:`2036`).
+
+3.17.0 (2022-06-26)
+*******************
+
+Features:
+
+- Support serialization as float in ``TimeDelta`` field (:pr:`1998`).
+  Thanks :user:`marcosatti` for the PR.
+- Add ``messages_dict`` property to ``ValidationError`` to facilitate type checking
+  (:pr:`1976`).
+  Thanks :user:`sirosen` for the PR.
+
+3.16.0 (2022-05-29)
+*******************
+
+Features:
+
+- Raise ``ValueError`` if an invalid value is passed to the ``unknown``
+  argument (:issue:`1721`, :issue:`1732`).
+  Thanks :user:`sirosen` for the PR.
+
+Other changes:
+
+- Set lower bound for ``packaging`` requirement (:issue:`1957`).
+  Thanks :user:`MatthewNicolTR` for reporting and thanks :user:`sirosen` for the PR.
+- Improve warning messages by passing ``stacklevel`` (:pr:`1986`).
+  Thanks :user:`tirkarthi` for the PR.
+
 3.15.0 (2022-03-12)
 *******************
 
 Features:
 
-- Allow passing a `dict` to `fields.Nested` (:pr:`1935`).
+- Allow passing a ``dict`` to ``fields.Nested`` (:pr:`1935`).
   Thanks :user:`sirosen` for the PR.
 
 Other changes:

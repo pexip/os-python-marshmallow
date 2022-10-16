@@ -13,7 +13,7 @@ Subject: Remove privacy breaches
  ]
  
  primary_domain = "py"
-@@ -51,10 +48,6 @@
+@@ -59,10 +56,6 @@
      "logo": "marshmallow-logo.png",
      "description": "Object serialization and deserialization, lightweight and fluffy.",
      "description_font_style": "italic",
@@ -24,3 +24,13 @@ Subject: Remove privacy breaches
      "opencollective": "marshmallow",
      "tidelift_url": (
          "https://tidelift.com/subscription/pkg/pypi-marshmallow"
+--- a/docs/_templates/donate.html
++++ b/docs/_templates/donate.html
+@@ -17,7 +17,6 @@
+ {% if theme_opencollective %}
+ <p>
+ <a class="badge" href="https://opencollective.com/{{ theme_opencollective }}" target="_blank">
+-  <img src="https://opencollective.com/{{ theme_opencollective }}/donate/button.png?color={{ theme_opencollective_button_color }}" width=300 />
+ </a>
+ </p>
+ {% endif %}

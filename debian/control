@@ -12,7 +12,7 @@ Build-Depends-Indep:
  python3-simplejson,
  python3-sphinx,
  python3-tz
-Standards-Version: 4.6.0
+Standards-Version: 4.6.1
 Rules-Requires-Root: no
 Homepage: https://github.com/marshmallow-code/marshmallow
 Vcs-Browser: https://salsa.debian.org/debian/python-marshmallow
