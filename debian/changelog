@@ -1,3 +1,9 @@
+python-marshmallow (3.15.0-1~bpo11+1pexip3) pexip; urgency=medium
+
+  * Remove dep on packaging
+
+ -- Huw Jones <huw@pexip.com>  Tue, 02 Nov 2022 11:19:01 +0000
+
 python-marshmallow (3.15.0-1~bpo11+1pexip2) pexip-bullseye; urgency=medium
 
   * Bullseye rebuild for ARM64 inclusion

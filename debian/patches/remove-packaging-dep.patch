@@ -1,0 +1,25 @@
+--- a/src/marshmallow/__init__.py
++++ b/src/marshmallow/__init__.py
+@@ -17,11 +17,7 @@
+ 
+ __version__ = "3.15.0"
+ __parsed_version__ = Version(__version__)
+-__version_info__: tuple[int, int, int] | tuple[
+-    int, int, int, str, int
+-] = __parsed_version__.release  # type: ignore[assignment]
+-if __parsed_version__.pre:
+-    __version_info__ += __parsed_version__.pre  # type: ignore[assignment]
++__version_info__: tuple[int, int, int]  = tuple(int(i) for i in __version__.split("."))
+ __all__ = [
+     "EXCLUDE",
+     "INCLUDE",
+--- a/setup.py
++++ b/setup.py
+@@ -58,7 +58,6 @@
+     package_dir={"": "src"},
+     package_data={"marshmallow": ["py.typed"]},
+     include_package_data=True,
+-    install_requires=["packaging"],
+     extras_require=EXTRAS_REQUIRE,
+     license="MIT",
+     zip_safe=False,
