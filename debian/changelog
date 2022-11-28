@@ -1,3 +1,9 @@
+python-marshmallow (3.15.0-1~bpo11+1pexip4) pexip; urgency=medium
+
+  * Fix previous attempt at removing dep on packaging
+
+ -- Huw Jones <huw@pexip.com>  Mon, 28 Nov 2022 11:28:01 +0000
+
 python-marshmallow (3.15.0-1~bpo11+1pexip3) pexip; urgency=medium
 
   * Remove dep on packaging
