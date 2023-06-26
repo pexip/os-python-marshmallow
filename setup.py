@@ -4,17 +4,17 @@ from setuptools import setup, find_packages
 EXTRAS_REQUIRE = {
     "tests": ["pytest", "pytz", "simplejson"],
     "lint": [
-        "mypy==0.940",
-        "flake8==4.0.1",
-        "flake8-bugbear==22.1.11",
+        "mypy==0.971",
+        "flake8==5.0.4",
+        "flake8-bugbear==22.9.11",
         "pre-commit~=2.4",
     ],
     "docs": [
-        "sphinx==4.4.0",
+        "sphinx==5.1.1",
         "sphinx-issues==3.0.1",
         "alabaster==0.7.12",
         "sphinx-version-warning==1.1.2",
-        "autodocsumm==0.2.7",
+        "autodocsumm==0.2.9",
     ],
 }
 EXTRAS_REQUIRE["dev"] = EXTRAS_REQUIRE["tests"] + EXTRAS_REQUIRE["lint"] + ["tox"]
@@ -58,7 +58,7 @@ setup(
     package_dir={"": "src"},
     package_data={"marshmallow": ["py.typed"]},
     include_package_data=True,
-    install_requires=["packaging"],
+    install_requires=["packaging>=17.0"],
     extras_require=EXTRAS_REQUIRE,
     license="MIT",
     zip_safe=False,

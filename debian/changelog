@@ -1,3 +1,9 @@
+python-marshmallow (3.18.0-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- Federico Ceratto <federico@debian.org>  Sun, 16 Oct 2022 11:22:54 +0100
+
 python-marshmallow (3.15.0-1~bpo11+1pexip5) pexip; urgency=medium
 
   * No-change rebuild
@@ -27,14 +33,6 @@ python-marshmallow (3.15.0-1~bpo11+1pexip1) pexip-bullseye; urgency=medium
   * New upstream version.
 
  -- Mark Hymers <mark.hymers@pexip.com>  Tue, 09 Aug 2022 10:20:54 +0100
-
-python-marshmallow (3.15.0-1~bpo11+1) bullseye-backports; urgency=medium
-
-  * Team upload
-  * Rebuild for bullseye-backports.
-  * [cad5259] run upstream tests as autopkgtest
-
- -- Joseph Nahmias <jello@debian.org>  Wed, 13 Jul 2022 21:10:38 -0400
 
 python-marshmallow (3.15.0-1) unstable; urgency=medium
 

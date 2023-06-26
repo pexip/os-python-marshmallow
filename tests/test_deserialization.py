@@ -10,7 +10,15 @@ from marshmallow import EXCLUDE, INCLUDE, RAISE, fields, Schema, validate
 from marshmallow.exceptions import ValidationError
 from marshmallow.validate import Equal
 
-from tests.base import assert_date_equal, assert_time_equal, central, ALL_FIELDS
+from tests.base import (
+    assert_date_equal,
+    assert_time_equal,
+    central,
+    ALL_FIELDS,
+    GenderEnum,
+    HairColorEnum,
+    DateEnum,
+)
 
 
 class TestDeserializingNone:
@@ -692,6 +700,67 @@ class TestFieldDeserialization:
         assert result.seconds == 123
         assert result.microseconds == 456000
 
+        total_microseconds_value = 322.0
+        field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS, float)
+        result = field.deserialize(total_microseconds_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(microseconds=1).total_seconds()
+        assert math.isclose(
+            result.total_seconds() / unit_value, total_microseconds_value
+        )
+
+        total_microseconds_value = 322.12345
+        field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS, float)
+        result = field.deserialize(total_microseconds_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(microseconds=1).total_seconds()
+        assert math.isclose(
+            result.total_seconds() / unit_value, math.floor(total_microseconds_value)
+        )
+
+        total_milliseconds_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.MILLISECONDS, float)
+        result = field.deserialize(total_milliseconds_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(milliseconds=1).total_seconds()
+        assert math.isclose(
+            result.total_seconds() / unit_value, total_milliseconds_value
+        )
+
+        total_seconds_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.SECONDS, float)
+        result = field.deserialize(total_seconds_value)
+        assert isinstance(result, dt.timedelta)
+        assert math.isclose(result.total_seconds(), total_seconds_value)
+
+        total_minutes_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.MINUTES, float)
+        result = field.deserialize(total_minutes_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(minutes=1).total_seconds()
+        assert math.isclose(result.total_seconds() / unit_value, total_minutes_value)
+
+        total_hours_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.HOURS, float)
+        result = field.deserialize(total_hours_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(hours=1).total_seconds()
+        assert math.isclose(result.total_seconds() / unit_value, total_hours_value)
+
+        total_days_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.DAYS, float)
+        result = field.deserialize(total_days_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(days=1).total_seconds()
+        assert math.isclose(result.total_seconds() / unit_value, total_days_value)
+
+        total_weeks_value = 322.223
+        field = fields.TimeDelta(fields.TimeDelta.WEEKS, float)
+        result = field.deserialize(total_weeks_value)
+        assert isinstance(result, dt.timedelta)
+        unit_value = dt.timedelta(weeks=1).total_seconds()
+        assert math.isclose(result.total_seconds() / unit_value, total_weeks_value)
+
     @pytest.mark.parametrize("in_value", ["", "badvalue", [], 9999999999])
     def test_invalid_timedelta_field_deserialization(self, in_value):
         field = fields.TimeDelta(fields.TimeDelta.DAYS)
@@ -1027,6 +1096,85 @@ class TestFieldDeserialization:
             field.deserialize(in_value)
 
         assert excinfo.value.args[0] == "Not a valid IPv6 interface."
+
+    def test_enum_field_by_symbol_deserialization(self):
+        field = fields.Enum(GenderEnum)
+        assert field.deserialize("male") == GenderEnum.male
+
+    def test_enum_field_by_symbol_invalid_value(self):
+        field = fields.Enum(GenderEnum)
+        with pytest.raises(
+            ValidationError, match="Must be one of: male, female, non_binary."
+        ):
+            field.deserialize("dummy")
+
+    def test_enum_field_by_symbol_not_string(self):
+        field = fields.Enum(GenderEnum)
+        with pytest.raises(ValidationError, match="Not a valid string."):
+            field.deserialize(12)
+
+    def test_enum_field_by_value_true_deserialization(self):
+        field = fields.Enum(HairColorEnum, by_value=True)
+        assert field.deserialize("black hair") == HairColorEnum.black
+        field = fields.Enum(GenderEnum, by_value=True)
+        assert field.deserialize(1) == GenderEnum.male
+
+    def test_enum_field_by_value_field_deserialization(self):
+        field = fields.Enum(HairColorEnum, by_value=fields.String)
+        assert field.deserialize("black hair") == HairColorEnum.black
+        field = fields.Enum(GenderEnum, by_value=fields.Integer)
+        assert field.deserialize(1) == GenderEnum.male
+        field = fields.Enum(DateEnum, by_value=fields.Date(format="%d/%m/%Y"))
+        assert field.deserialize("29/02/2004") == DateEnum.date_1
+
+    def test_enum_field_by_value_true_invalid_value(self):
+        field = fields.Enum(HairColorEnum, by_value=True)
+        with pytest.raises(
+            ValidationError,
+            match="Must be one of: black hair, brown hair, blond hair, red hair.",
+        ):
+            field.deserialize("dummy")
+        field = fields.Enum(GenderEnum, by_value=True)
+        with pytest.raises(ValidationError, match="Must be one of: 1, 2, 3."):
+            field.deserialize(12)
+
+    def test_enum_field_by_value_field_invalid_value(self):
+        field = fields.Enum(HairColorEnum, by_value=fields.String)
+        with pytest.raises(
+            ValidationError,
+            match="Must be one of: black hair, brown hair, blond hair, red hair.",
+        ):
+            field.deserialize("dummy")
+        field = fields.Enum(GenderEnum, by_value=fields.Integer)
+        with pytest.raises(ValidationError, match="Must be one of: 1, 2, 3."):
+            field.deserialize(12)
+        field = fields.Enum(DateEnum, by_value=fields.Date(format="%d/%m/%Y"))
+        with pytest.raises(
+            ValidationError, match="Must be one of: 29/02/2004, 29/02/2008, 29/02/2012."
+        ):
+            field.deserialize("28/02/2004")
+
+    def test_enum_field_by_value_true_wrong_type(self):
+        field = fields.Enum(HairColorEnum, by_value=True)
+        with pytest.raises(
+            ValidationError,
+            match="Must be one of: black hair, brown hair, blond hair, red hair.",
+        ):
+            field.deserialize("dummy")
+        field = fields.Enum(GenderEnum, by_value=True)
+        with pytest.raises(ValidationError, match="Must be one of: 1, 2, 3."):
+            field.deserialize(12)
+
+    def test_enum_field_by_value_field_wrong_type(self):
+        field = fields.Enum(HairColorEnum, by_value=fields.String)
+        with pytest.raises(ValidationError, match="Not a valid string."):
+            field.deserialize(12)
+        field = fields.Enum(GenderEnum, by_value=fields.Integer)
+        with pytest.raises(ValidationError, match="Not a valid integer."):
+            field.deserialize("dummy")
+        field = fields.Enum(DateEnum, by_value=fields.Date(format="%d/%m/%Y"))
+        with pytest.raises(ValidationError, match="Not a valid date."):
+            field.deserialize("30/02/2004")
 
     def test_deserialization_function_must_be_callable(self):
         with pytest.raises(TypeError):

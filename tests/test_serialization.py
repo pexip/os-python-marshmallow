@@ -5,12 +5,13 @@ import itertools
 import decimal
 import uuid
 import ipaddress
+import math
 
 import pytest
 
 from marshmallow import Schema, fields, missing as missing_
 
-from tests.base import User, ALL_FIELDS, central
+from tests.base import User, ALL_FIELDS, central, GenderEnum, HairColorEnum, DateEnum
 
 
 class DateTimeList:
@@ -253,6 +254,31 @@ class TestFieldSerialization:
             field_exploded.serialize("ipv6interface", user)
             == ipv6interface_exploded_string
         )
+
+    def test_enum_field_by_symbol_serialization(self, user):
+        user.sex = GenderEnum.male
+        field = fields.Enum(GenderEnum)
+        assert field.serialize("sex", user) == "male"
+
+    def test_enum_field_by_value_true_serialization(self, user):
+        user.hair_color = HairColorEnum.black
+        field = fields.Enum(HairColorEnum, by_value=True)
+        assert field.serialize("hair_color", user) == "black hair"
+        user.sex = GenderEnum.male
+        field = fields.Enum(GenderEnum, by_value=True)
+        assert field.serialize("sex", user) == 1
+        user.some_date = DateEnum.date_1
+
+    def test_enum_field_by_value_field_serialization(self, user):
+        user.hair_color = HairColorEnum.black
+        field = fields.Enum(HairColorEnum, by_value=fields.String)
+        assert field.serialize("hair_color", user) == "black hair"
+        user.sex = GenderEnum.male
+        field = fields.Enum(GenderEnum, by_value=fields.Integer)
+        assert field.serialize("sex", user) == 1
+        user.some_date = DateEnum.date_1
+        field = fields.Enum(DateEnum, by_value=fields.Date(format="%d/%m/%Y"))
+        assert field.serialize("some_date", user) == "29/02/2004"
 
     def test_decimal_field(self, user):
         user.m1 = 12
@@ -720,6 +746,58 @@ class TestFieldSerialization:
         user.d9 = dt.timedelta(milliseconds=1999)
         field = fields.TimeDelta(fields.TimeDelta.SECONDS)
         assert field.serialize("d9", user) == 1
+
+        user.d10 = dt.timedelta(
+            weeks=1,
+            days=6,
+            hours=2,
+            minutes=5,
+            seconds=51,
+            milliseconds=10,
+            microseconds=742,
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.MICROSECONDS, float)
+        unit_value = dt.timedelta(microseconds=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.MILLISECONDS, float)
+        unit_value = dt.timedelta(milliseconds=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.SECONDS, float)
+        assert math.isclose(field.serialize("d10", user), user.d10.total_seconds())
+
+        field = fields.TimeDelta(fields.TimeDelta.MINUTES, float)
+        unit_value = dt.timedelta(minutes=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.HOURS, float)
+        unit_value = dt.timedelta(hours=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.DAYS, float)
+        unit_value = dt.timedelta(days=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        field = fields.TimeDelta(fields.TimeDelta.WEEKS, float)
+        unit_value = dt.timedelta(weeks=1).total_seconds()
+        assert math.isclose(
+            field.serialize("d10", user), user.d10.total_seconds() / unit_value
+        )
+
+        with pytest.raises(ValueError):
+            fields.TimeDelta(fields.TimeDelta.SECONDS, str)
 
     def test_datetime_list_field(self):
         obj = DateTimeList([dt.datetime.utcnow(), dt.datetime.now()])
