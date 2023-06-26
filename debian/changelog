@@ -1,3 +1,10 @@
+python-marshmallow (3.18.0-1pexip1) pexip; urgency=medium
+
+  * New upstream release
+  * Refresh patches
+
+ -- Huw Jones <huw@pexip.com>  Mon, 26 Jun 2023 17:10:50 +0100
+
 python-marshmallow (3.18.0-1) unstable; urgency=medium
 
   * New upstream release
