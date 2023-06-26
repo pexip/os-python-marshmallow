@@ -19,7 +19,7 @@ Homepage: https://github.com/marshmallow-code/marshmallow
 Vcs-Browser: https://salsa.debian.org/debian/python-marshmallow
 Vcs-Git: https://salsa.debian.org/debian/python-marshmallow.git
 Testsuite: autopkgtest-pkg-python
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ bullseye-backports
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ bookworm
 
 Package: python3-marshmallow
 Architecture: all
