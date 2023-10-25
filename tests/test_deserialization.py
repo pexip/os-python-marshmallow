@@ -4,6 +4,8 @@ import ipaddress
 import decimal
 import math
 
+from unittest.mock import patch
+
 import pytest
 
 from marshmallow import EXCLUDE, INCLUDE, RAISE, fields, Schema, validate
@@ -19,6 +21,20 @@ from tests.base import (
     HairColorEnum,
     DateEnum,
 )
+
+
+class MockDateTimeOverflowError(dt.datetime):
+    """Used to simulate the possible OverflowError of datetime.fromtimestamp"""
+
+    def fromtimestamp(self, *args, **kwargs):
+        raise OverflowError()
+
+
+class MockDateTimeOSError(dt.datetime):
+    """Used to simulate the possible OSError of datetime.fromtimestamp"""
+
+    def fromtimestamp(self, *args, **kwargs):
+        raise OSError()
 
 
 class TestDeserializingNone:
@@ -258,7 +274,6 @@ class TestFieldDeserialization:
     @pytest.mark.parametrize("allow_nan", (None, False, True))
     @pytest.mark.parametrize("value", ("nan", "-nan", "inf", "-inf"))
     def test_float_field_allow_nan(self, value, allow_nan):
-
         if allow_nan is None:
             # Test default case is False
             field = fields.Float()
@@ -525,6 +540,61 @@ class TestFieldDeserialization:
                 field.deserialize(value)
         else:
             assert field.deserialize(value) == expected
+
+    @pytest.mark.parametrize(
+        ("fmt", "value", "expected"),
+        [
+            ("timestamp", 1384043025, dt.datetime(2013, 11, 10, 0, 23, 45)),
+            ("timestamp", "1384043025", dt.datetime(2013, 11, 10, 0, 23, 45)),
+            ("timestamp", 1384043025, dt.datetime(2013, 11, 10, 0, 23, 45)),
+            ("timestamp", 1384043025.12, dt.datetime(2013, 11, 10, 0, 23, 45, 120000)),
+            (
+                "timestamp",
+                1384043025.123456,
+                dt.datetime(2013, 11, 10, 0, 23, 45, 123456),
+            ),
+            ("timestamp", 1, dt.datetime(1970, 1, 1, 0, 0, 1)),
+            ("timestamp_ms", 1384043025000, dt.datetime(2013, 11, 10, 0, 23, 45)),
+            ("timestamp_ms", 1000, dt.datetime(1970, 1, 1, 0, 0, 1)),
+        ],
+    )
+    def test_timestamp_field_deserialization(self, fmt, value, expected):
+        field = fields.DateTime(format=fmt)
+        assert field.deserialize(value) == expected
+
+        # By default, a datetime from a timestamp is never aware.
+        field = fields.NaiveDateTime(format=fmt)
+        assert field.deserialize(value) == expected
+
+        field = fields.AwareDateTime(format=fmt)
+        with pytest.raises(ValidationError, match="Not a valid aware datetime."):
+            field.deserialize(value)
+
+        # But it can be added by providing a default.
+        field = fields.AwareDateTime(format=fmt, default_timezone=central)
+        expected_aware = expected.replace(tzinfo=central)
+        assert field.deserialize(value) == expected_aware
+
+    @pytest.mark.parametrize("fmt", ["timestamp", "timestamp_ms"])
+    @pytest.mark.parametrize(
+        "in_value",
+        ["", "!@#", 0, -1, dt.datetime(2013, 11, 10, 1, 23, 45)],
+    )
+    def test_invalid_timestamp_field_deserialization(self, fmt, in_value):
+        field = fields.DateTime(format=fmt)
+        with pytest.raises(ValidationError, match="Not a valid datetime."):
+            field.deserialize(in_value)
+
+    #  Regression test for https://github.com/marshmallow-code/marshmallow/pull/2102
+    @pytest.mark.parametrize("fmt", ["timestamp", "timestamp_ms"])
+    @pytest.mark.parametrize(
+        "mock_fromtimestamp", [MockDateTimeOSError, MockDateTimeOverflowError]
+    )
+    def test_oversized_timestamp_field_deserialization(self, fmt, mock_fromtimestamp):
+        with patch("datetime.datetime", mock_fromtimestamp):
+            field = fields.DateTime(format=fmt)
+            with pytest.raises(ValidationError, match="Not a valid datetime."):
+                field.deserialize(99999999999999999)
 
     @pytest.mark.parametrize(
         ("fmt", "timezone", "value", "expected"),
@@ -1502,7 +1572,7 @@ class TestSchemaDeserialization:
             name = fields.Str()
 
         class StoreSchema(Schema):
-            pets = fields.Nested(PetSchema(), allow_none=False, many=True)
+            pets = fields.Nested(PetSchema, allow_none=False, many=True)
 
         sch = StoreSchema()
         errors = sch.validate({"pets": None})
@@ -1526,7 +1596,7 @@ class TestSchemaDeserialization:
             name = fields.Str()
 
         class StoreSchema(Schema):
-            pets = fields.Nested(PetSchema(), required=True, many=True)
+            pets = fields.Nested(PetSchema, required=True, many=True)
 
         sch = StoreSchema()
         errors = sch.validate({})
@@ -2165,6 +2235,21 @@ class TestValidation:
         # If we ignore a missing z.y we should get a validation error.
         with pytest.raises(ValidationError):
             SchemaB().load(b_dict, partial=("z.y",))
+
+    def test_nested_partial_default(self):
+        class SchemaA(Schema):
+            x = fields.Integer(required=True)
+            y = fields.Integer(required=True)
+
+        class SchemaB(Schema):
+            z = fields.Nested(SchemaA(partial=("x",)))
+
+        b_dict = {"z": {"y": 42}}
+        # Nested partial args should be respected.
+        result = SchemaB().load(b_dict)
+        assert result["z"]["y"] == 42
+        with pytest.raises(ValidationError):
+            SchemaB().load({"z": {"x": 0}})
 
 
 @pytest.mark.parametrize("FieldClass", ALL_FIELDS)

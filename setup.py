@@ -4,17 +4,17 @@ from setuptools import setup, find_packages
 EXTRAS_REQUIRE = {
     "tests": ["pytest", "pytz", "simplejson"],
     "lint": [
-        "mypy==0.971",
-        "flake8==5.0.4",
-        "flake8-bugbear==22.9.11",
-        "pre-commit~=2.4",
+        "mypy==1.4.1",
+        "flake8==6.0.0",
+        "flake8-bugbear==23.7.10",
+        "pre-commit>=2.4,<4.0",
     ],
     "docs": [
-        "sphinx==5.1.1",
+        "sphinx==7.0.1",
         "sphinx-issues==3.0.1",
-        "alabaster==0.7.12",
+        "alabaster==0.7.13",
         "sphinx-version-warning==1.1.2",
-        "autodocsumm==0.2.9",
+        "autodocsumm==0.2.11",
     ],
 }
 EXTRAS_REQUIRE["dev"] = EXTRAS_REQUIRE["tests"] + EXTRAS_REQUIRE["lint"] + ["tox"]
@@ -73,16 +73,16 @@ setup(
         "validation",
         "schema",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     test_suite="tests",
     project_urls={

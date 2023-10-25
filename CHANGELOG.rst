@@ -1,6 +1,48 @@
 Changelog
 ---------
 
+3.20.1 (2023-07-20)
+*******************
+
+Bug fixes:
+
+- Fix call to ``get_declared_fields``: pass ``dict_cls`` again (:issue:`2152`).
+  Thanks :user:`Cheaterman` for reporting.
+
+3.20.0 (2023-07-20)
+*******************
+
+Features:
+
+- Add ``absolute`` parameter to ``URL`` validator and ``Url`` field (:pr:`2123`).
+  Thanks :user:`sirosen` for the PR.
+- Use Abstract Base Classes to define ``FieldABC`` and ``SchemaABC``
+  (:issue:`1449`). Thanks :user:`aditkumar72` for the PR.
+- Use `OrderedSet` as default `set_class`. Schemas are now ordered by default.
+  (:issue:`1744`)
+
+Bug fixes:
+
+- Handle ``OSError`` and ``OverflowError`` in ``utils.from_timestamp`` (:pr:`2102`).
+  Thanks :user:`TheBigRoomXXL` for the PR.
+- Fix the default inheritance of nested partial schemas (:issue:`2149`).
+  Thanks :user:`matejsp` for reporting.
+
+Other changes:
+
+- Officially support Python 3.11 (:pr:`2067`).
+- Drop support for Python 3.7 (:pr:`2135`).
+
+3.19.0 (2022-11-11)
+*******************
+
+Features:
+
+- Add ``timestamp`` and ``timestamp_ms`` formats to ``fields.DateTime``
+  (:issue:`612`).
+  Thanks :user:`vgavro` for the suggestion and thanks :user:`vanHoi` for
+  the PR.
+
 3.18.0 (2022-09-15)
 *******************
 
@@ -83,7 +125,7 @@ Bug fixes:
 
 Other changes:
 
-- Fix type-hints for ```data``` arg in ```Schema.validate``` to accept
+- Fix type-hints for ``data`` arg in ``Schema.validate`` to accept
   list of dictionaries (:issue:`1790`, :pr:`1868`).
   Thanks  :user:`yourun-proger` for PR.
 - Improve warning when passing metadata as keyword arguments (:pr:`1882`).

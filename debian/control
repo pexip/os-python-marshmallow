@@ -11,8 +11,9 @@ Build-Depends-Indep:
  python3-setuptools,
  python3-simplejson,
  python3-sphinx,
- python3-tz
-Standards-Version: 4.6.1
+ python3-tz,
+ tzdata-legacy
+Standards-Version: 4.6.2
 Rules-Requires-Root: no
 Homepage: https://github.com/marshmallow-code/marshmallow
 Vcs-Browser: https://salsa.debian.org/debian/python-marshmallow
@@ -32,6 +33,7 @@ Section: doc
 Depends: ${misc:Depends}, ${sphinxdoc:Depends},
  libjs-jquery,
  libjs-underscore
+Multi-Arch: foreign
 Description: Library for converting complex datatypes - documentation
  An ORM/ODM/framework-agnostic library for converting complex datatypes,
  such as objects, to and from native Python datatypes.
