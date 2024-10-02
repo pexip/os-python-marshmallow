@@ -1,3 +1,18 @@
+python-marshmallow (3.20.1-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Rebuild source-only to allow migration to testing.
+  * Add autopkgtest.
+
+ -- Thomas Goirand <zigo@debian.org>  Wed, 25 Oct 2023 13:54:37 +0200
+
+python-marshmallow (3.20.1-1) unstable; urgency=medium
+
+  * New upstream release
+  * Add tzdata-legacy dependency (Closes: #1052847)
+
+ -- Federico Ceratto <federico@debian.org>  Sun, 08 Oct 2023 15:44:04 +0200
+
 python-marshmallow (3.18.0-1+pexip24u4) pexip-bookworm; urgency=medium
 
   * New versioning scheme
