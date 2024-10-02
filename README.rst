@@ -6,9 +6,13 @@ marshmallow: simplified object serialization
     :target: https://pypi.org/project/marshmallow/
     :alt: Latest version
 
-.. image:: https://dev.azure.com/sloria/sloria/_apis/build/status/marshmallow-code.marshmallow?branchName=dev
-    :target: https://dev.azure.com/sloria/sloria/_build/latest?definitionId=5&branchName=dev
+.. image:: https://github.com/marshmallow-code/marshmallow/actions/workflows/build-release.yml/badge.svg
+    :target: https://github.com/marshmallow-code/marshmallow/actions/workflows/build-release.yml
     :alt: Build status
+
+.. image:: https://results.pre-commit.ci/badge/github/marshmallow-code/marshmallow/dev.svg
+   :target: https://results.pre-commit.ci/latest/github/marshmallow-code/marshmallow/dev
+   :alt: pre-commit.ci status
 
 .. image:: https://readthedocs.org/projects/marshmallow/badge/
    :target: https://marshmallow.readthedocs.io/
@@ -72,7 +76,7 @@ Full documentation is available at https://marshmallow.readthedocs.io/ .
 Requirements
 ============
 
-- Python >= 3.7
+- Python >= 3.8
 
 Ecosystem
 =========

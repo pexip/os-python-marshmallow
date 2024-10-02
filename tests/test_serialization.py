@@ -146,7 +146,6 @@ class TestFieldSerialization:
         assert field.serialize("uuid2", user) is None
 
     def test_ip_address_field(self, user):
-
         ipv4_string = "192.168.0.1"
         ipv6_string = "ffff::ffff"
         ipv6_exploded_string = ipaddress.ip_address("ffff::ffff").exploded
@@ -167,7 +166,6 @@ class TestFieldSerialization:
         assert field_exploded.serialize("ipv6", user) == ipv6_exploded_string
 
     def test_ipv4_address_field(self, user):
-
         ipv4_string = "192.168.0.1"
 
         user.ipv4 = ipaddress.ip_address(ipv4_string)
@@ -179,7 +177,6 @@ class TestFieldSerialization:
         assert field.serialize("empty_ip", user) is None
 
     def test_ipv6_address_field(self, user):
-
         ipv6_string = "ffff::ffff"
         ipv6_exploded_string = ipaddress.ip_address("ffff::ffff").exploded
 
@@ -196,7 +193,6 @@ class TestFieldSerialization:
         assert field_exploded.serialize("ipv6", user) == ipv6_exploded_string
 
     def test_ip_interface_field(self, user):
-
         ipv4interface_string = "192.168.0.1/24"
         ipv6interface_string = "ffff::ffff/128"
         ipv6interface_exploded_string = ipaddress.ip_interface(
@@ -222,7 +218,6 @@ class TestFieldSerialization:
         )
 
     def test_ipv4_interface_field(self, user):
-
         ipv4interface_string = "192.168.0.1/24"
 
         user.ipv4interface = ipaddress.ip_interface(ipv4interface_string)
@@ -234,7 +229,6 @@ class TestFieldSerialization:
         assert field.serialize("empty_ipinterface", user) is None
 
     def test_ipv6_interface_field(self, user):
-
         ipv6interface_string = "ffff::ffff/128"
         ipv6interface_exploded_string = ipaddress.ip_interface(
             "ffff::ffff/128"
@@ -576,6 +570,38 @@ class TestFieldSerialization:
         ],
     )
     def test_datetime_field_rfc822(self, fmt, value, expected):
+        field = fields.DateTime(format=fmt)
+        assert field.serialize("d", {"d": value}) == expected
+
+    @pytest.mark.parametrize(
+        ("fmt", "value", "expected"),
+        [
+            ("timestamp", dt.datetime(1970, 1, 1), 0),
+            ("timestamp", dt.datetime(2013, 11, 10, 0, 23, 45), 1384043025),
+            (
+                "timestamp",
+                dt.datetime(2013, 11, 10, 0, 23, 45, tzinfo=dt.timezone.utc),
+                1384043025,
+            ),
+            (
+                "timestamp",
+                central.localize(dt.datetime(2013, 11, 10, 0, 23, 45), is_dst=False),
+                1384064625,
+            ),
+            ("timestamp_ms", dt.datetime(2013, 11, 10, 0, 23, 45), 1384043025000),
+            (
+                "timestamp_ms",
+                dt.datetime(2013, 11, 10, 0, 23, 45, tzinfo=dt.timezone.utc),
+                1384043025000,
+            ),
+            (
+                "timestamp_ms",
+                central.localize(dt.datetime(2013, 11, 10, 0, 23, 45), is_dst=False),
+                1384064625000,
+            ),
+        ],
+    )
+    def test_datetime_field_timestamp(self, fmt, value, expected):
         field = fields.DateTime(format=fmt)
         assert field.serialize("d", {"d": value}) == expected
 
