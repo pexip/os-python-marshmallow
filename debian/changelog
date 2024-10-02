@@ -1,6 +1,7 @@
 python-marshmallow (3.20.1-1.1+pexip24u1) pexip; urgency=medium
 
   * New upstream release
+  * Remove tzdata-legacy dep
 
  -- Huw Jones <huw@pexip.com>  Wed, 02 Oct 2024 10:10:49 +0100
 
