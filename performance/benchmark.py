@@ -1,14 +1,16 @@
-"""Simple benchmark for Marshmallow serialization of a moderately complex object.
+"""Simple benchmark for marshmallow serialization of a moderately complex object.
 
-Uses the `timeit` module to benchmark serializing an object through Marshmallow.
+Uses the `timeit` module to benchmark serializing an object through marshmallow.
 """
+
+# ruff: noqa: A002, T201
 import argparse
 import cProfile
+import datetime
 import gc
 import timeit
-import datetime
 
-from marshmallow import Schema, fields, ValidationError, post_dump
+from marshmallow import Schema, ValidationError, fields, post_dump
 
 
 # Custom validator
@@ -80,7 +82,7 @@ class Quote:
         self.col_number = col_number
 
 
-def run_timeit(quotes, iterations, repeat, profile=False):
+def run_timeit(quotes, iterations, repeat, *, profile=False):
     quotes_schema = QuoteSchema(many=True)
     if profile:
         profile = cProfile.Profile()
@@ -99,8 +101,7 @@ def run_timeit(quotes, iterations, repeat, profile=False):
         profile.disable()
         profile.dump_stats("marshmallow.pprof")
 
-    usec = best * 1e6 / iterations
-    return usec
+    return best * 1e6 / iterations / len(quotes)
 
 
 def main():
@@ -124,30 +125,26 @@ def main():
     parser.add_argument(
         "--profile",
         action="store_true",
-        help="Whether or not to profile Marshmallow while running the benchmark.",
+        help="Whether or not to profile marshmallow while running the benchmark.",
     )
     args = parser.parse_args()
 
-    quotes = []
-
-    for i in range(args.object_count):
-        quotes.append(
-            Quote(
-                i,
-                Author(i, "Foo", "Bar", 42, 66, "123 Fake St"),
-                "Hello World",
-                datetime.datetime(2019, 7, 4, tzinfo=datetime.timezone.utc),
-                "The World",
-                34,
-                3,
-                70,
-            )
+    quotes = [
+        Quote(
+            i,
+            Author(i, "Foo", "Bar", 42, 66, "123 Fake St"),
+            "Hello World",
+            datetime.datetime(2019, 7, 4, tzinfo=datetime.timezone.utc),
+            "The World",
+            34,
+            3,
+            70,
         )
+        for i in range(args.object_count)
+    ]
 
     print(
-        "Benchmark Result: {:.2f} usec/dump".format(
-            run_timeit(quotes, args.iterations, args.repeat, profile=args.profile)
-        )
+        f"Benchmark Result: {run_timeit(quotes, args.iterations, args.repeat, profile=args.profile):.2f} usec/dump"
     )
 
 

@@ -1,17 +1,17 @@
 """Test utilities and fixtures."""
-import functools
+
 import datetime as dt
+import functools
 import uuid
 from enum import Enum, IntEnum
+from zoneinfo import ZoneInfo
 
 import simplejson
 
-import pytz
-
-from marshmallow import Schema, fields, post_load, validate, missing
+from marshmallow import Schema, fields, missing, post_load, validate
 from marshmallow.exceptions import ValidationError
 
-central = pytz.timezone("US/Central")
+central = ZoneInfo("America/Chicago")
 
 
 class GenderEnum(IntEnum):
@@ -38,7 +38,6 @@ ALL_FIELDS = [
     fields.Integer,
     fields.Boolean,
     fields.Float,
-    fields.Number,
     fields.DateTime,
     fields.Time,
     fields.Date,
@@ -85,6 +84,7 @@ class User:
     def __init__(
         self,
         name,
+        *,
         age=0,
         id_=None,
         homepage=None,
@@ -104,9 +104,7 @@ class User:
         # A naive datetime
         self.created = dt.datetime(2013, 11, 10, 14, 20, 58)
         # A TZ-aware datetime
-        self.updated = central.localize(
-            dt.datetime(2013, 11, 10, 14, 20, 58), is_dst=False
-        )
+        self.updated = dt.datetime(2013, 11, 10, 14, 20, 58, tzinfo=central)
         self.id = id_
         self.homepage = homepage
         self.email = email
@@ -126,7 +124,7 @@ class User:
         self.relatives = []
         self.various_data = various_data or {
             "pets": ["cat", "dog"],
-            "address": "1600 Pennsylvania Ave\n" "Washington, DC 20006",
+            "address": "1600 Pennsylvania Ave\nWashington, DC 20006",
         }
 
     @property
@@ -169,6 +167,7 @@ class Uppercased(fields.Field):
     def _serialize(self, value, attr, obj):
         if value:
             return value.upper()
+        return None
 
 
 def get_lowername(obj):
@@ -176,13 +175,12 @@ def get_lowername(obj):
         return missing
     if isinstance(obj, dict):
         return obj.get("name").lower()
-    else:
-        return obj.name.lower()
+    return obj.name.lower()
 
 
 class UserSchema(Schema):
     name = fields.String()
-    age = fields.Float()  # type: fields.Field
+    age: fields.Field = fields.Float()
     created = fields.DateTime()
     created_formatted = fields.DateTime(
         format="%Y-%m-%d", attribute="created", dump_only=True
@@ -195,7 +193,7 @@ class UserSchema(Schema):
     homepage = fields.Url()
     email = fields.Email()
     balance = fields.Decimal()
-    is_old = fields.Method("get_is_old")  # type: fields.Field
+    is_old: fields.Field = fields.Method("get_is_old")
     lowername = fields.Function(get_lowername)
     registered = fields.Boolean()
     hair_colors = fields.List(fields.Raw)
@@ -346,7 +344,7 @@ class BlogSchemaOnlyExclude(BlogSchema):
     user = fields.Nested(UserSchema, only=("name",), exclude=("name", "species"))
 
 
-class mockjson:  # noqa
+class mockjson:  # noqa: N801
     @staticmethod
     def dumps(val):
         return b"{'foo': 42}"

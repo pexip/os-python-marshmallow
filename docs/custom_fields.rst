@@ -1,8 +1,7 @@
-
-Custom Fields
+Custom fields
 =============
 
-There are three ways to create a custom-formatted field for a `Schema`:
+There are three ways to create a custom-formatted field for a `Schema <marshmallow.Schema>`:
 
 - Create a custom :class:`Field <marshmallow.fields.Field>` class
 - Use a :class:`Method <marshmallow.fields.Method>` field
@@ -10,7 +9,7 @@ There are three ways to create a custom-formatted field for a `Schema`:
 
 The method you choose will depend on the manner in which you intend to reuse the field.
 
-Creating A Field Class
+Creating a field class
 ----------------------
 
 To create a custom field class, create a subclass of :class:`marshmallow.fields.Field` and implement its :meth:`_serialize <marshmallow.fields.Field._serialize>` and/or :meth:`_deserialize <marshmallow.fields.Field._deserialize>` methods.
@@ -43,7 +42,7 @@ To create a custom field class, create a subclass of :class:`marshmallow.fields.
         created_at = fields.DateTime()
         pin_code = PinCode()
 
-Method Fields
+Method fields
 -------------
 
 A :class:`Method <marshmallow.fields.Method>` field will serialize to the value returned by a method of the Schema. The method must take an ``obj`` parameter which is the object to be serialized.
@@ -59,7 +58,7 @@ A :class:`Method <marshmallow.fields.Method>` field will serialize to the value 
         def get_days_since_created(self, obj):
             return dt.datetime.now().day - obj.created_at.day
 
-Function Fields
+Function fields
 ---------------
 
 A :class:`Function <marshmallow.fields.Function>` field will serialize the value of a function that is passed directly to it. Like a :class:`Method <marshmallow.fields.Method>` field, the function must take a single argument ``obj``.
@@ -97,12 +96,19 @@ Both :class:`Function <marshmallow.fields.Function>` and :class:`Method <marshma
 
 .. _adding-context:
 
-Adding Context to `Method` and `Function` Fields
+Adding context to `Method` and `Function` fields
 ------------------------------------------------
+
+.. warning::
+
+    The ``context`` attribute is deprecated and will be removed in marshmallow 4.
+    Use `contextvars.ContextVar` for passing context to fields, pre-/post-processing methods, and validators instead.
+    marshmallow 4 will also provide an `experimental helper API <https://marshmallow.readthedocs.io/en/latest/marshmallow.experimental.context.html>`_
+    for using context.
 
 A :class:`Function <marshmallow.fields.Function>` or :class:`Method <marshmallow.fields.Method>` field may need information about its environment to know how to serialize a value.
 
-In these cases, you can set the ``context`` attribute (a dictionary) of a `Schema`. :class:`Function <marshmallow.fields.Function>` and :class:`Method <marshmallow.fields.Method>` fields will have access to this dictionary.
+In these cases, you can set the ``context`` attribute (a dictionary) of a `Schema <marshmallow.Schema>`. :class:`Function <marshmallow.fields.Function>` and :class:`Method <marshmallow.fields.Method>` fields will have access to this dictionary.
 
 As an example, you might want your ``UserSchema`` to output whether or not a ``User`` is the author of a ``Blog`` or whether a certain word appears in a ``Blog's`` title.
 
@@ -129,7 +135,7 @@ As an example, you might want your ``UserSchema`` to output whether or not a ``U
     result["likes_bikes"]  # => True
 
 
-Customizing Error Messages
+Customizing error messages
 --------------------------
 
 Validation error messages for fields can be configured at the class or instance level.
@@ -155,14 +161,13 @@ Error messages can also be passed to a `Field's` constructor.
 
 
     class UserSchema(Schema):
-
         name = fields.Str(
             required=True, error_messages={"required": "Please provide a name."}
         )
 
 
-Next Steps
+Next steps
 ----------
 
-- Need to add schema-level validation, post-processing, or error handling behavior? See the :doc:`Extending Schemas <extending>` page.
-- For example applications using marshmallow, check out the :doc:`Examples <examples>` page.
+- Need to add schema-level validation, post-processing, or error handling behavior? See the :doc:`extending/index` page.
+- For example applications using marshmallow, check out the :doc:`examples/index` page.

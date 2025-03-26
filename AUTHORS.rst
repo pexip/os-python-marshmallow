@@ -173,3 +173,7 @@ Contributors (chronological)
 - Ivo Reumkens `@vanHoi <https://github.com/vanHoi>`_
 - Aditya Tewary `@aditkumar72 <https://github.com/aditkumar72>`_
 - Sebastien Lovergne `@TheBigRoomXXL <https://github.com/TheBigRoomXXL>`_
+- Peter C `@somethingnew2-0 <https://github.com/somethingnew2-0>`_
+- Marcel Jackwerth `@mrcljx` <https://github.com/mrcljx>`_
+- Fares Abubaker `@Fares-Abubaker <https://github.com/Fares-Abubaker>`_
+- Nicolas Simonds `@0xDEC0DE <https://github.com/0xDEC0DE>`_

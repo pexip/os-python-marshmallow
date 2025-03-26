@@ -1,10 +1,10 @@
-from collections import OrderedDict
 import datetime as dt
+from collections import OrderedDict
 
 import pytest
 
-from marshmallow import fields, Schema, EXCLUDE
-
+from marshmallow import EXCLUDE, Schema, fields
+from marshmallow.warnings import RemovedInMarshmallow4Warning
 from tests.base import User
 
 
@@ -60,6 +60,19 @@ class OrderedNestedOnly(Schema):
 
 
 class TestFieldOrdering:
+    def test_ordered_option_is_deprecate(self):
+        with pytest.warns(RemovedInMarshmallow4Warning):
+
+            class MySchema(Schema):
+                class Meta:
+                    ordered = True
+
+        with pytest.warns(RemovedInMarshmallow4Warning):
+
+            class MySchema(Schema):
+                class Meta:
+                    ordered = False
+
     @pytest.mark.parametrize("with_meta", (False, True))
     def test_ordered_option_is_inherited(self, user, with_meta):
         class ParentUnordered(Schema):
@@ -260,6 +273,22 @@ class TestIncludeOption:
             email = fields.Str()
 
         s = AddFieldsChild()
-        assert "email" in s._declared_fields.keys()
-        assert "from" in s._declared_fields.keys()
+        assert "email" in s._declared_fields
+        assert "from" in s._declared_fields
         assert isinstance(s._declared_fields["from"], fields.Str)
+
+
+class TestManyOption:
+    class ManySchema(Schema):
+        foo = fields.Str()
+
+        class Meta:
+            many = True
+
+    def test_many_by_default(self):
+        test = self.ManySchema()
+        assert test.load([{"foo": "bar"}]) == [{"foo": "bar"}]
+
+    def test_explicit_single(self):
+        test = self.ManySchema(many=False)
+        assert test.load({"foo": "bar"}) == {"foo": "bar"}

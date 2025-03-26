@@ -1,18 +1,18 @@
 import pytest
 
 from marshmallow import (
-    Schema,
-    fields,
-    pre_dump,
-    post_dump,
-    pre_load,
-    post_load,
-    validates,
-    validates_schema,
-    ValidationError,
     EXCLUDE,
     INCLUDE,
     RAISE,
+    Schema,
+    ValidationError,
+    fields,
+    post_dump,
+    post_load,
+    pre_dump,
+    pre_load,
+    validates,
+    validates_schema,
 )
 
 
@@ -75,8 +75,11 @@ def test_decorated_processors(partial_val):
     schema = ExampleSchema(partial=partial_val)
 
     # Need to re-create these because the processors will modify in place.
-    make_item = lambda: {"value": 3}
-    make_items = lambda: [make_item(), {"value": 5}]
+    def make_item():
+        return {"value": 3}
+
+    def make_items():
+        return [make_item(), {"value": 5}]
 
     item_dumped = schema.dump(make_item())
     assert item_dumped == {"datum": {"value": "TAG4"}}
@@ -89,7 +92,7 @@ def test_decorated_processors(partial_val):
     assert items_loaded == make_items()
 
 
-#  Regression test for https://github.com/marshmallow-code/marshmallow/issues/347
+# Regression test for https://github.com/marshmallow-code/marshmallow/issues/347
 @pytest.mark.parametrize("unknown", (EXCLUDE, INCLUDE, RAISE))
 def test_decorated_processor_returning_none(unknown):
     class PostSchema(Schema):
@@ -127,7 +130,7 @@ def test_decorated_processor_returning_none(unknown):
 class TestPassOriginal:
     def test_pass_original_single(self):
         class MySchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
             @post_load(pass_original=True)
             def post_load(self, data, original_data, **kwargs):
@@ -154,7 +157,7 @@ class TestPassOriginal:
 
     def test_pass_original_many(self):
         class MySchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
             @post_load(pass_many=True, pass_original=True)
             def post_load(self, data, original, many, **kwargs):
@@ -449,7 +452,7 @@ class TestValidatesSchemaDecorator:
 
     @pytest.mark.parametrize("data", ([{"foo": 1, "bar": 2}],))
     @pytest.mark.parametrize(
-        "pass_many,expected_data,expected_original_data",
+        ("pass_many", "expected_data", "expected_original_data"),
         (
             [True, [{"foo": 1}], [{"foo": 1, "bar": 2}]],
             [False, {"foo": 1}, {"foo": 1, "bar": 2}],
@@ -686,8 +689,36 @@ class TestValidatesSchemaDecorator:
         assert "bar" in errors[0]
         assert "_schema" not in errors
 
+    # https://github.com/marshmallow-code/marshmallow/issues/2170
+    def test_data_key_is_used_in_errors_dict(self):
+        class MySchema(Schema):
+            foo = fields.Int(data_key="fooKey")
 
-def test_decorator_error_handling():  # noqa: C901
+            @validates("foo")
+            def validate_foo(self, value, **kwargs):
+                raise ValidationError("from validates")
+
+            @validates_schema(skip_on_field_errors=False)
+            def validate_schema(self, data, **kwargs):
+                raise ValidationError("from validates_schema str", field_name="foo")
+
+            @validates_schema(skip_on_field_errors=False)
+            def validate_schema2(self, data, **kwargs):
+                raise ValidationError({"fooKey": "from validates_schema dict"})
+
+        with pytest.raises(ValidationError) as excinfo:
+            MySchema().load({"fooKey": 42})
+        exc = excinfo.value
+        assert exc.messages == {
+            "fooKey": [
+                "from validates",
+                "from validates_schema str",
+                "from validates_schema dict",
+            ]
+        }
+
+
+def test_decorator_error_handling():
     class ExampleSchema(Schema):
         foo = fields.Int()
         bar = fields.Int()
@@ -829,7 +860,7 @@ example = Example(nested=[Nested(x) for x in range(1)])
 
 
 @pytest.mark.parametrize(
-    "data,expected_data,expected_original_data",
+    ("data", "expected_data", "expected_original_data"),
     ([example, {"foo": 0}, example.nested[0]],),
 )
 def test_decorator_post_dump_with_nested_original_and_pass_many(
@@ -863,7 +894,7 @@ def test_decorator_post_dump_with_nested_original_and_pass_many(
 
 
 @pytest.mark.parametrize(
-    "data,expected_data,expected_original_data",
+    ("data", "expected_data", "expected_original_data"),
     ([{"nested": [{"foo": 0}]}, {"foo": 0}, {"foo": 0}],),
 )
 def test_decorator_post_load_with_nested_original_and_pass_many(
@@ -894,3 +925,26 @@ def test_decorator_post_load_with_nested_original_and_pass_many(
 
     schema = ExampleSchema()
     assert schema.load(data) == data
+
+
+# https://github.com/marshmallow-code/marshmallow/issues/1755
+def test_post_load_method_that_appends_to_data():
+    class MySchema(Schema):
+        foo = fields.Int()
+
+        @post_load(pass_many=True)
+        def append_to_data(self, data, **kwargs):
+            data.append({"foo": 42})
+            return data
+
+        @post_load(pass_many=False, pass_original=True)
+        def noop(self, data, original_data, **kwargs):
+            if original_data is None:  # added item
+                assert data == {"foo": 42}
+            else:
+                assert original_data == {"foo": 24}
+                assert data == {"foo": 24}
+            return data
+
+    schema = MySchema(many=True)
+    assert schema.load([{"foo": 24}]) == [{"foo": 24}, {"foo": 42}]

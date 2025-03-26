@@ -3,4 +3,11 @@
 set -e
 set -x
 
-PYTHONPATH=`pwd`/src python3 -m pytest tests -v
+excludes='not test_version_attributes_deprecated'
+
+arch="$(dpkg --print-architecture)"
+if [ "$arch" = "i386" ]; then
+    excludes="$excludes and not test_from_timestamp_with_overflow_value"
+fi
+
+PYTHONPATH=`pwd`/src python3 -m pytest tests -v -k "$excludes"
