@@ -2,10 +2,12 @@ import datetime as dt
 import decimal
 import math
 import random
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
+from typing import NamedTuple
 
 import pytest
 import simplejson as json
+
 from marshmallow import (
     EXCLUDE,
     INCLUDE,
@@ -22,7 +24,10 @@ from marshmallow.exceptions import (
     StringNotCollectionError,
     ValidationError,
 )
-
+from marshmallow.warnings import (
+    ChangedInMarshmallow4Warning,
+    RemovedInMarshmallow4Warning,
+)
 from tests.base import (
     Blog,
     BlogOnlySchema,
@@ -81,25 +86,23 @@ def test_load_resets_errors():
 def test_load_validation_error_stores_input_data_and_valid_data():
     class MySchema(Schema):
         always_valid = fields.DateTime()
-        always_invalid = fields.Field(validate=[lambda v: False])
+        always_invalid = fields.Raw(validate=[lambda v: False])
 
     schema = MySchema()
     input_data = {
-        "always_valid": dt.datetime.utcnow().isoformat(),
+        "always_valid": dt.datetime.now(dt.timezone.utc).isoformat(),
         "always_invalid": 24,
     }
-    try:
+    with pytest.raises(ValidationError) as excinfo:
         schema.load(input_data)
-    except ValidationError as err:
-        # err.data is the raw input data
-        assert err.data == input_data
-        assert "always_valid" in err.valid_data
-        # err.valid_data contains valid, deserialized data
-        assert isinstance(err.valid_data["always_valid"], dt.datetime)
-        # excludes invalid data
-        assert "always_invalid" not in err.valid_data
-    else:
-        pytest.fail("Data is invalid. Expected a ValidationError to be raised.")
+    err = excinfo.value
+    # err.data is the raw input data
+    assert err.data == input_data
+    assert "always_valid" in err.valid_data
+    # err.valid_data contains valid, deserialized data
+    assert isinstance(err.valid_data["always_valid"], dt.datetime)
+    # excludes invalid data
+    assert "always_invalid" not in err.valid_data
 
 
 def test_load_resets_error_fields():
@@ -188,19 +191,19 @@ def test_multiple_errors_can_be_stored_for_a_given_index():
 def test_dump_returns_a_dict(user):
     s = UserSchema()
     result = s.dump(user)
-    assert type(result) == dict
+    assert type(result) is dict
 
 
 def test_dumps_returns_a_string(user):
     s = UserSchema()
     result = s.dumps(user)
-    assert type(result) == str
+    assert type(result) is str
 
 
 def test_dumping_single_object_with_collection_schema(user):
     s = UserSchema(many=True)
     result = s.dump(user, many=False)
-    assert type(result) == dict
+    assert type(result) is dict
     assert result == UserSchema().dump(user)
 
 
@@ -208,7 +211,7 @@ def test_loading_single_object_with_collection_schema():
     s = UserSchema(many=True)
     in_data = {"name": "Mick", "email": "mick@stones.com"}
     result = s.load(in_data, many=False)
-    assert type(result) == User
+    assert type(result) is User
     assert result.name == UserSchema().load(in_data).name
 
 
@@ -224,15 +227,15 @@ def test_dumps_many():
 def test_load_returns_an_object():
     s = UserSchema()
     result = s.load({"name": "Monty"})
-    assert type(result) == User
+    assert type(result) is User
 
 
 def test_load_many():
     s = UserSchema()
     in_data = [{"name": "Mick"}, {"name": "Keith"}]
     result = s.load(in_data, many=True)
-    assert type(result) == list
-    assert type(result[0]) == User
+    assert type(result) is list
+    assert type(result[0]) is User
     assert result[0].name == "Mick"
 
 
@@ -300,7 +303,7 @@ def test_load_many_in_nested_empty_collection(val):
 def test_loads_returns_a_user():
     s = UserSchema()
     result = s.loads(json.dumps({"name": "Monty"}))
-    assert type(result) == User
+    assert type(result) is User
 
 
 def test_loads_many():
@@ -308,7 +311,7 @@ def test_loads_many():
     in_data = [{"name": "Mick"}, {"name": "Keith"}]
     in_json_data = json.dumps(in_data)
     result = s.loads(in_json_data, many=True)
-    assert type(result) == list
+    assert type(result) is list
     assert result[0].name == "Mick"
 
 
@@ -364,11 +367,12 @@ def test_nested_on_bind_field_hook():
 
         foo = fields.Nested(NestedSchema)
 
-    schema1 = MySchema(context={"fname": "foobar"})
-    schema2 = MySchema(context={"fname": "quxquux"})
+    with pytest.warns(RemovedInMarshmallow4Warning):
+        schema1 = MySchema(context={"fname": "foobar"})
+        schema2 = MySchema(context={"fname": "quxquux"})
 
-    assert schema1.fields["foo"].schema.fields["bar"].metadata["fname"] == "foobar"
-    assert schema2.fields["foo"].schema.fields["bar"].metadata["fname"] == "quxquux"
+        assert schema1.fields["foo"].schema.fields["bar"].metadata["fname"] == "foobar"
+        assert schema2.fields["foo"].schema.fields["bar"].metadata["fname"] == "quxquux"
 
 
 class TestValidate:
@@ -416,7 +420,7 @@ class TestValidate:
 
     def test_validate_required(self):
         class MySchema(Schema):
-            foo = fields.Field(required=True)
+            foo = fields.Raw(required=True)
 
         s = MySchema()
         errors = s.validate({"bar": 42})
@@ -435,7 +439,7 @@ def test_dumps_returns_json(user):
     ser = UserSchema()
     serialized = ser.dump(user)
     json_data = ser.dumps(user)
-    assert type(json_data) == str
+    assert type(json_data) is str
     expected = json.dumps(serialized)
     assert json_data == expected
 
@@ -527,14 +531,14 @@ def test_stored_invalid_email():
 def test_integer_field():
     u = User("John", age=42.3)
     serialized = UserIntSchema().dump(u)
-    assert type(serialized["age"]) == int
+    assert type(serialized["age"]) is int
     assert serialized["age"] == 42
 
 
 def test_as_string():
     u = User("John", age=42.3)
     serialized = UserFloatStringSchema().dump(u)
-    assert type(serialized["age"]) == str
+    assert type(serialized["age"]) is str
     assert math.isclose(float(serialized["age"]), 42.3)
 
 
@@ -553,7 +557,9 @@ def test_fields_must_be_declared_as_instances(user):
     class BadUserSchema(Schema):
         name = fields.String
 
-    with pytest.raises(TypeError, match="must be declared as a Field instance"):
+    with pytest.raises(
+        TypeError, match='Field for "name" must be declared as a Field instance'
+    ):
         BadUserSchema().dump(user)
 
 
@@ -813,8 +819,8 @@ def test_nested_custom_set_in_exclude_reusing_schema():
             return [][item]
 
     class ChildSchema(Schema):
-        foo = fields.Field(required=True)
-        bar = fields.Field()
+        foo = fields.Raw(required=True)
+        bar = fields.Raw()
 
         class Meta:
             only = ("bar",)
@@ -831,13 +837,13 @@ def test_nested_custom_set_in_exclude_reusing_schema():
 
 def test_nested_only():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema)
 
     sch = ParentSchema(only=("bla", "blubb.foo", "blubb.bar"))
@@ -854,13 +860,13 @@ def test_nested_only():
 
 def test_nested_only_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema, only=("foo", "bar"))
 
     sch = ParentSchema(only=("blubb.foo", "blubb.baz"))
@@ -877,13 +883,13 @@ def test_nested_only_inheritance():
 
 def test_nested_only_empty_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema, only=("bar",))
 
     sch = ParentSchema(only=("blubb.foo",))
@@ -900,13 +906,13 @@ def test_nested_only_empty_inheritance():
 
 def test_nested_exclude():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema)
 
     sch = ParentSchema(exclude=("bli", "blubb.baz"))
@@ -923,13 +929,13 @@ def test_nested_exclude():
 
 def test_nested_exclude_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema, exclude=("baz",))
 
     sch = ParentSchema(exclude=("blubb.foo",))
@@ -946,13 +952,13 @@ def test_nested_exclude_inheritance():
 
 def test_nested_only_and_exclude():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema)
 
     sch = ParentSchema(only=("bla", "blubb.foo", "blubb.bar"), exclude=("blubb.foo",))
@@ -969,13 +975,13 @@ def test_nested_only_and_exclude():
 
 def test_nested_only_then_exclude_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema, only=("foo", "bar"))
 
     sch = ParentSchema(exclude=("blubb.foo",))
@@ -992,13 +998,13 @@ def test_nested_only_then_exclude_inheritance():
 
 def test_nested_exclude_then_only_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema, exclude=("foo",))
 
     sch = ParentSchema(only=("blubb.bar",))
@@ -1015,15 +1021,15 @@ def test_nested_exclude_then_only_inheritance():
 
 def test_nested_exclude_and_only_inheritance():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
-        ban = fields.Field()
-        fuu = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
+        ban = fields.Raw()
+        fuu = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(
             ChildSchema, only=("foo", "bar", "baz", "ban"), exclude=("foo",)
         )
@@ -1101,13 +1107,13 @@ def test_nested_instance_exclude():
 
 def test_meta_nested_exclude():
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema)
 
         class Meta:
@@ -1163,9 +1169,9 @@ def test_nested_custom_set_not_implementing_getitem():
         Implements an object with some attribute
         """
 
-        def __init__(self, attribute):
+        def __init__(self, attribute: str):
             """
-            :param str attribute: The attribute to initialize
+            :param attribute: The attribute to initialize
             """
             self.attribute = attribute
 
@@ -1194,18 +1200,18 @@ def test_nested_custom_set_not_implementing_getitem():
 
 def test_deeply_nested_only_and_exclude():
     class GrandChildSchema(Schema):
-        goo = fields.Field()
-        gah = fields.Field()
-        bah = fields.Field()
+        goo = fields.Raw()
+        gah = fields.Raw()
+        bah = fields.Raw()
 
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
         flubb = fields.Nested(GrandChildSchema)
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(ChildSchema)
 
     sch = ParentSchema(
@@ -1279,10 +1285,10 @@ def test_nested_lambda():
 @pytest.mark.parametrize("data_key", ("f1", "f5", None))
 def test_data_key_collision(data_key):
     class MySchema(Schema):
-        f1 = fields.Field()
-        f2 = fields.Field(data_key=data_key)
-        f3 = fields.Field(data_key="f5")
-        f4 = fields.Field(data_key="f1", load_only=True)
+        f1 = fields.Raw()
+        f2 = fields.Raw(data_key=data_key)
+        f3 = fields.Raw(data_key="f5")
+        f4 = fields.Raw(data_key="f1", load_only=True)
 
     if data_key is None:
         MySchema()
@@ -1294,10 +1300,10 @@ def test_data_key_collision(data_key):
 @pytest.mark.parametrize("attribute", ("f1", "f5", None))
 def test_attribute_collision(attribute):
     class MySchema(Schema):
-        f1 = fields.Field()
-        f2 = fields.Field(attribute=attribute)
-        f3 = fields.Field(attribute="f5")
-        f4 = fields.Field(attribute="f1", dump_only=True)
+        f1 = fields.Raw()
+        f2 = fields.Raw(attribute=attribute)
+        f3 = fields.Raw(attribute="f5")
+        f4 = fields.Raw(attribute="f1", dump_only=True)
 
     if attribute is None:
         MySchema()
@@ -1307,7 +1313,7 @@ def test_attribute_collision(attribute):
 
 
 class TestDeeplyNestedLoadOnly:
-    @pytest.fixture()
+    @pytest.fixture
     def schema(self):
         class GrandChildSchema(Schema):
             str_dump_only = fields.String()
@@ -1339,7 +1345,7 @@ class TestDeeplyNestedLoadOnly:
             ),
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def data(self):
         return dict(
             str_dump_only="Dump Only",
@@ -1387,7 +1393,7 @@ class TestDeeplyNestedLoadOnly:
 
 
 class TestDeeplyNestedListLoadOnly:
-    @pytest.fixture()
+    @pytest.fixture
     def schema(self):
         class ChildSchema(Schema):
             str_dump_only = fields.String()
@@ -1405,7 +1411,7 @@ class TestDeeplyNestedListLoadOnly:
             load_only=("str_load_only", "child.str_load_only"),
         )
 
-    @pytest.fixture()
+    @pytest.fixture
     def data(self):
         return dict(
             str_dump_only="Dump Only",
@@ -1443,18 +1449,18 @@ class TestDeeplyNestedListLoadOnly:
 
 def test_nested_constructor_only_and_exclude():
     class GrandChildSchema(Schema):
-        goo = fields.Field()
-        gah = fields.Field()
-        bah = fields.Field()
+        goo = fields.Raw()
+        gah = fields.Raw()
+        bah = fields.Raw()
 
     class ChildSchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
         flubb = fields.Nested(GrandChildSchema)
 
     class ParentSchema(Schema):
-        bla = fields.Field()
-        bli = fields.Field()
+        bla = fields.Raw()
+        bli = fields.Raw()
         blubb = fields.Nested(
             ChildSchema, only=("foo", "flubb.goo", "flubb.gah"), exclude=("flubb.goo",)
         )
@@ -1477,9 +1483,9 @@ def test_nested_constructor_only_and_exclude():
 
 def test_only_and_exclude():
     class MySchema(Schema):
-        foo = fields.Field()
-        bar = fields.Field()
-        baz = fields.Field()
+        foo = fields.Raw()
+        bar = fields.Raw()
+        baz = fields.Raw()
 
     sch = MySchema(only=("foo", "bar"), exclude=("bar",))
     data = dict(foo=42, bar=24, baz=242)
@@ -1490,7 +1496,7 @@ def test_only_and_exclude():
 
 def test_only_and_exclude_with_fields():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
         class Meta:
             fields = ("bar", "baz")
@@ -1504,7 +1510,7 @@ def test_only_and_exclude_with_fields():
 
 def test_invalid_only_and_exclude_with_fields():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
         class Meta:
             fields = ("bar", "baz")
@@ -1519,7 +1525,7 @@ def test_invalid_only_and_exclude_with_fields():
 
 def test_only_and_exclude_with_additional():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
         class Meta:
             additional = ("bar", "baz")
@@ -1533,7 +1539,7 @@ def test_only_and_exclude_with_additional():
 
 def test_invalid_only_and_exclude_with_additional():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
         class Meta:
             additional = ("bar", "baz")
@@ -1548,7 +1554,7 @@ def test_invalid_only_and_exclude_with_additional():
 
 def test_exclude_invalid_attribute():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
     with pytest.raises(ValueError, match="'bar'"):
         MySchema(exclude=("bar",))
@@ -1574,7 +1580,7 @@ def test_only_bounded_by_additional():
 
 def test_only_empty():
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
     sch = MySchema(only=())
     assert "foo" not in sch.dump({"foo": "bar"})
@@ -1583,7 +1589,7 @@ def test_only_empty():
 @pytest.mark.parametrize("param", ("only", "exclude"))
 def test_only_and_exclude_as_string(param):
     class MySchema(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
     with pytest.raises(StringNotCollectionError):
         MySchema(**{param: "foo"})
@@ -1591,15 +1597,17 @@ def test_only_and_exclude_as_string(param):
 
 def test_nested_with_sets():
     class Inner(Schema):
-        foo = fields.Field()
+        foo = fields.Raw()
 
     class Outer(Schema):
         inners = fields.Nested(Inner, many=True)
 
     sch = Outer()
 
-    DataClass = namedtuple("DataClass", ["foo"])
-    data = dict(inners={DataClass(42), DataClass(2)})
+    class Thing(NamedTuple):
+        foo: int
+
+    data = dict(inners={Thing(42), Thing(2)})
     result = sch.dump(data)
     assert len(result["inners"]) == 2
 
@@ -1619,22 +1627,22 @@ def test_meta_serializer_fields():
 def test_meta_fields_mapping(user):
     s = UserMetaSchema()
     s.dump(user)  # need to call dump to update fields
-    assert type(s.fields["balance"]) == fields.Decimal
+    assert type(s.fields["balance"]) is fields.Decimal
     # Inferred fields
-    assert type(s.fields["name"]._field_cache[fields.String]) == fields.String
-    assert type(s.fields["created"]._field_cache[fields.DateTime]) == fields.DateTime
-    assert type(s.fields["updated"]._field_cache[fields.DateTime]) == fields.DateTime
-    assert type(s.fields["age"]._field_cache[fields.Float]) == fields.Float
-    assert type(s.fields["registered"]._field_cache[fields.Boolean]) == fields.Boolean
-    assert type(s.fields["sex_choices"]._field_cache[fields.Raw]) == fields.Raw
-    assert type(s.fields["hair_colors"]._field_cache[fields.Raw]) == fields.Raw
-    assert type(s.fields["finger_count"]._field_cache[fields.Integer]) == fields.Integer
-    assert type(s.fields["uid"]._field_cache[fields.UUID]) == fields.UUID
-    assert type(s.fields["time_registered"]._field_cache[fields.Time]) == fields.Time
-    assert type(s.fields["birthdate"]._field_cache[fields.Date]) == fields.Date
+    assert type(s.fields["name"]._field_cache[fields.String]) is fields.String
+    assert type(s.fields["created"]._field_cache[fields.DateTime]) is fields.DateTime
+    assert type(s.fields["updated"]._field_cache[fields.DateTime]) is fields.DateTime
+    assert type(s.fields["age"]._field_cache[fields.Float]) is fields.Float
+    assert type(s.fields["registered"]._field_cache[fields.Boolean]) is fields.Boolean
+    assert type(s.fields["sex_choices"]._field_cache[fields.Raw]) is fields.Raw
+    assert type(s.fields["hair_colors"]._field_cache[fields.Raw]) is fields.Raw
+    assert type(s.fields["finger_count"]._field_cache[fields.Integer]) is fields.Integer
+    assert type(s.fields["uid"]._field_cache[fields.UUID]) is fields.UUID
+    assert type(s.fields["time_registered"]._field_cache[fields.Time]) is fields.Time
+    assert type(s.fields["birthdate"]._field_cache[fields.Date]) is fields.Date
     assert (
         type(s.fields["since_created"]._field_cache[fields.TimeDelta])
-        == fields.TimeDelta
+        is fields.TimeDelta
     )
 
 
@@ -1891,7 +1899,7 @@ class TestFieldValidation:
             raise ValidationError(["err1", "err2"])
 
         class MySchema(Schema):
-            foo = fields.Field(validate=validator)
+            foo = fields.Raw(validate=validator)
 
         s = MySchema()
         errors = s.validate({"foo": 42})
@@ -1903,7 +1911,7 @@ class TestFieldValidation:
             raise ValidationError({"code": "invalid_foo"})
 
         class MySchema(Schema):
-            foo = fields.Field(validate=validator)
+            foo = fields.Raw(validate=validator)
 
         s = MySchema()
         errors = s.validate({"foo": 42})
@@ -1911,8 +1919,8 @@ class TestFieldValidation:
 
     def test_ignored_if_not_in_only(self):
         class MySchema(Schema):
-            a = fields.Field()
-            b = fields.Field()
+            a = fields.Raw()
+            b = fields.Raw()
 
             @validates("a")
             def validate_a(self, val):
@@ -1946,13 +1954,12 @@ class TestNestedSchema:
     def blog(self, user):
         col1 = User(name="Mick", age=123)
         col2 = User(name="Keith", age=456)
-        blog = Blog(
+        return Blog(
             "Monty's blog",
             user=user,
             categories=["humor", "violence"],
             collaborators=[col1, col2],
         )
-        return blog
 
     # regression test for https://github.com/marshmallow-code/marshmallow/issues/64
     def test_nested_many_with_missing_attribute(self, user):
@@ -1967,7 +1974,7 @@ class TestNestedSchema:
 
     def test_nested_with_attribute_none(self):
         class InnerSchema(Schema):
-            bar = fields.Field()
+            bar = fields.Raw()
 
         class MySchema(Schema):
             foo = fields.Nested(InnerSchema)
@@ -2030,7 +2037,7 @@ class TestNestedSchema:
 
     def test_exclude(self, blog):
         serialized = BlogSchemaExclude().dump(blog)
-        assert "uppername" not in serialized["user"].keys()
+        assert "uppername" not in serialized["user"]
 
     def test_list_field(self, blog):
         serialized = BlogSchema().dump(blog)
@@ -2047,7 +2054,7 @@ class TestNestedSchema:
         data = BlogSchema().load(in_data)
         collabs = data["collaborators"]
         assert len(collabs) == 2
-        assert all(type(each) == User for each in collabs)
+        assert all(type(each) is User for each in collabs)
         assert collabs[0].name == in_data["collaborators"][0]["name"]
 
     def test_nested_errors(self):
@@ -2097,7 +2104,7 @@ class TestNestedSchema:
     # regression test for https://github.com/marshmallow-code/marshmallow/issues/188
     def test_invalid_type_passed_to_nested_field(self):
         class InnerSchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
         class MySchema(Schema):
             inner = fields.Nested(InnerSchema, many=True)
@@ -2124,7 +2131,7 @@ class TestNestedSchema:
     # regression test for https://github.com/marshmallow-code/marshmallow/issues/298
     def test_all_errors_on_many_nested_field_with_validates_decorator(self):
         class Inner(Schema):
-            req = fields.Field(required=True)
+            req = fields.Raw(required=True)
 
         class Outer(Schema):
             inner = fields.Nested(Inner, many=True)
@@ -2152,7 +2159,7 @@ class TestNestedSchema:
         if unknown is None or unknown == RAISE:
             with pytest.raises(ValidationError) as exc:
                 ParentSchema().load(data)
-                assert exc.messages == {"child": {"extra": ["Unknown field."]}}
+            assert exc.value.messages == {"child": {"extra": ["Unknown field."]}}
         else:
             output = {
                 INCLUDE: {"child": {"num": 1, "extra": 1}},
@@ -2390,7 +2397,7 @@ class TestSelfReference:
 
 
 class RequiredUserSchema(Schema):
-    name = fields.Field(required=True)
+    name = fields.Raw(required=True)
 
 
 def test_serialization_with_required_field():
@@ -2516,13 +2523,14 @@ class TestContext:
         ser = CSchema()
         ser.context["info"] = "i like bikes"
         obj = {"inner": {}}
-        result = ser.dump(obj)
+        with pytest.warns(RemovedInMarshmallow4Warning):
+            result = ser.dump(obj)
         assert result["inner"]["likes_bikes"] is True
 
     # Regression test for https://github.com/marshmallow-code/marshmallow/issues/820
     def test_nested_list_fields_inherit_context(self):
         class InnerSchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
             @validates("foo")
             def validate_foo(self, value):
@@ -2543,7 +2551,7 @@ class TestContext:
     # Regression test for https://github.com/marshmallow-code/marshmallow/issues/820
     def test_nested_dict_fields_inherit_context(self):
         class InnerSchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
             @validates("foo")
             def validate_foo(self, value):
@@ -2568,10 +2576,12 @@ class TestContext:
                 raise NotImplementedError
 
         class InnerSchema(Schema):
-            foo = fields.Field()
+            foo = fields.Raw()
 
-        class OuterSchema(Schema):
-            inner = fields.Nested(InnerSchema(context={"unp": Unpicklable()}))
+        with pytest.warns(RemovedInMarshmallow4Warning):
+
+            class OuterSchema(Schema):
+                inner = fields.Nested(InnerSchema(context={"unp": Unpicklable()}))
 
         outer = OuterSchema()
         obj = {"inner": {"foo": 42}}
@@ -2589,10 +2599,11 @@ def test_serializer_can_specify_nested_object_as_attribute(blog):
 
 class TestFieldInheritance:
     def test_inherit_fields_from_schema_subclass(self):
-        expected = {
-            "field_a": fields.Number(),
-            "field_b": fields.Number(),
-        }
+        with pytest.warns(ChangedInMarshmallow4Warning):
+            expected = {
+                "field_a": fields.Number(),
+                "field_b": fields.Number(),
+            }
 
         class SerializerA(Schema):
             field_a = expected["field_a"]
@@ -2603,10 +2614,11 @@ class TestFieldInheritance:
         assert SerializerB._declared_fields == expected
 
     def test_inherit_fields_from_non_schema_subclass(self):
-        expected = {
-            "field_a": fields.Number(),
-            "field_b": fields.Number(),
-        }
+        with pytest.warns(ChangedInMarshmallow4Warning):
+            expected = {
+                "field_a": fields.Number(),
+                "field_b": fields.Number(),
+            }
 
         class PlainBaseClass:
             field_a = expected["field_a"]
@@ -2700,11 +2712,11 @@ class TestRequiredFields:
         allow_none_field = fields.Str(allow_none=True)
         allow_none_required_field = fields.Str(required=True, allow_none=True)
 
-    @pytest.fixture()
+    @pytest.fixture
     def string_schema(self):
         return self.StringSchema()
 
-    @pytest.fixture()
+    @pytest.fixture
     def data(self):
         return dict(
             required_field="foo",
@@ -2736,7 +2748,7 @@ class TestRequiredFields:
 
     def test_allow_none_custom_message(self, data):
         class MySchema(Schema):
-            allow_none_field = fields.Field(
+            allow_none_field = fields.Raw(
                 allow_none=False, error_messages={"null": "<custom>"}
             )
 
@@ -2755,11 +2767,11 @@ class TestDefaults:
         int_with_default = fields.Int(allow_none=True, dump_default=42)
         str_with_default = fields.Str(allow_none=True, dump_default="foo")
 
-    @pytest.fixture()
+    @pytest.fixture
     def schema(self):
         return self.MySchema()
 
-    @pytest.fixture()
+    @pytest.fixture
     def data(self):
         return dict(
             int_no_default=None,
@@ -2783,13 +2795,13 @@ class TestDefaults:
             # the missing key is not in the serialized result
             assert key not in result
             # the rest of the keys are in the result
-            assert all(k in result for k in d.keys())
+            assert all(k in result for k in d)
 
     def test_none_is_serialized_to_none(self, schema, data):
         errors = schema.validate(data)
         assert errors == {}
         result = schema.dump(data)
-        for key in data.keys():
+        for key in data:
             msg = f"result[{key!r}] should be None"
             assert result[key] is None, msg
 
@@ -2802,7 +2814,7 @@ class TestDefaults:
 
     def test_loading_none(self, schema, data):
         result = schema.load(data)
-        for key in data.keys():
+        for key in data:
             assert result[key] is None
 
     def test_missing_inputs_are_excluded_from_load_output(self, schema, data):
@@ -2818,7 +2830,7 @@ class TestDefaults:
             # the missing key is not in the deserialized result
             assert key not in result
             # the rest of the keys are in the result
-            assert all(k in result for k in d.keys())
+            assert all(k in result for k in d)
 
 
 class TestLoadOnly:
@@ -2831,11 +2843,11 @@ class TestLoadOnly:
         str_load_only = fields.String()
         str_regular = fields.String()
 
-    @pytest.fixture()
+    @pytest.fixture
     def schema(self):
         return self.MySchema()
 
-    @pytest.fixture()
+    @pytest.fixture
     def data(self):
         return dict(
             str_dump_only="Dump Only",
@@ -2916,7 +2928,7 @@ def test_unknown_parameter_value_is_validated(usage_location):
     class MySchema(Schema):
         foo = fields.String()
 
-    with pytest.raises(
+    with pytest.raises(  # noqa: PT012
         ValueError,
         match="Object 'badval' is not a valid value for the 'unknown' parameter",
     ):

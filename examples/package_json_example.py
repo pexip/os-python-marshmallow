@@ -1,9 +1,17 @@
-import sys
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#     "marshmallow",
+#     "packaging>=17.0",
+# ]
+# ///
 import json
-from packaging import version
+import sys
 from pprint import pprint
 
-from marshmallow import Schema, fields, INCLUDE, ValidationError
+from packaging import version
+
+from marshmallow import INCLUDE, Schema, ValidationError, fields
 
 
 class Version(fields.Field):
