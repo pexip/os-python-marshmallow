@@ -1,4 +1,11 @@
-Tests: unittests
+Tests:
+ unittests,
 Depends:
- @builddeps@,
-Restrictions: allow-stderr needs-root
+ python3-all,
+ python3-pytest,
+ python3-simplejson,
+ python3-tz,
+ tzdata-legacy,
+Restrictions:
+ allow-stderr,
+ needs-root,

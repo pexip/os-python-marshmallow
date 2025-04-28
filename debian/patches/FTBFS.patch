@@ -1,0 +1,11 @@
+--- a/docs/conf.py
++++ b/docs/conf.py
+@@ -24,7 +24,7 @@
+ project = "marshmallow"
+ copyright = "Steven Loria and contributors"  # noqa: A001
+ 
+-version = release = importlib.metadata.version("marshmallow")
++version = release = '3.26.1' # I'm done
+ 
+ exclude_patterns = ["_build"]
+ # Ignore WARNING: more than one target found for cross-reference 'Schema': marshmallow.schema.Schema, marshmallow.Schema

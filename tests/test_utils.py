@@ -1,12 +1,12 @@
 import datetime as dt
-from collections import namedtuple
-from functools import partial
 from copy import copy, deepcopy
+from functools import partial
+from typing import NamedTuple
 
 import pytest
 
-from marshmallow import utils, fields, Schema
-from tests.base import central, assert_time_equal, assert_date_equal
+from marshmallow import Schema, fields, utils
+from tests.base import assert_date_equal, assert_time_equal, central
 
 
 def test_missing_singleton_copy():
@@ -14,7 +14,9 @@ def test_missing_singleton_copy():
     assert deepcopy(utils.missing) is utils.missing
 
 
-PointNT = namedtuple("PointNT", ["x", "y"])
+class PointNT(NamedTuple):
+    x: int
+    y: int
 
 
 class PointClass:
@@ -96,8 +98,7 @@ def test_set_value():
 
 
 def test_is_keyed_tuple():
-    Point = namedtuple("Point", ["x", "y"])
-    p = Point(24, 42)
+    p = PointNT(24, 42)
     assert utils.is_keyed_tuple(p) is True
     t = (24, 42)
     assert utils.is_keyed_tuple(t) is False
@@ -124,7 +125,7 @@ def test_is_collection():
             "Sun, 10 Nov 2013 01:23:45 +0000",
         ),
         (
-            central.localize(dt.datetime(2013, 11, 10, 1, 23, 45), is_dst=False),
+            dt.datetime(2013, 11, 10, 1, 23, 45, tzinfo=central),
             "Sun, 10 Nov 2013 01:23:45 -0600",
         ),
     ],
@@ -146,7 +147,7 @@ def test_rfc_format(value, expected):
             "2013-11-10T01:23:45+00:00",
         ),
         (
-            central.localize(dt.datetime(2013, 11, 10, 1, 23, 45), is_dst=False),
+            dt.datetime(2013, 11, 10, 1, 23, 45, tzinfo=central),
             "2013-11-10T01:23:45-06:00",
         ),
     ],
@@ -165,13 +166,13 @@ def test_isoformat(value, expected):
         ),
         (
             "Sun, 10 Nov 2013 01:23:45 -0600",
-            central.localize(dt.datetime(2013, 11, 10, 1, 23, 45), is_dst=False),
+            dt.datetime(2013, 11, 10, 1, 23, 45, tzinfo=central),
         ),
     ],
 )
 def test_from_rfc(value, expected):
     result = utils.from_rfc(value)
-    assert type(result) == dt.datetime
+    assert type(result) is dt.datetime
     assert result == expected
 
 
@@ -194,13 +195,13 @@ def test_from_rfc(value, expected):
         ),
         (
             "2013-11-10T01:23:45-06:00",
-            central.localize(dt.datetime(2013, 11, 10, 1, 23, 45), is_dst=False),
+            dt.datetime(2013, 11, 10, 1, 23, 45, tzinfo=central),
         ),
     ],
 )
 def test_from_iso_datetime(value, expected):
     result = utils.from_iso_datetime(value)
-    assert type(result) == dt.datetime
+    assert type(result) is dt.datetime
     assert result == expected
 
 
@@ -208,7 +209,7 @@ def test_from_iso_time_with_microseconds():
     t = dt.time(1, 23, 45, 6789)
     formatted = t.isoformat()
     result = utils.from_iso_time(formatted)
-    assert type(result) == dt.time
+    assert type(result) is dt.time
     assert_time_equal(result, t)
 
 
@@ -216,7 +217,7 @@ def test_from_iso_time_without_microseconds():
     t = dt.time(1, 23, 45)
     formatted = t.isoformat()
     result = utils.from_iso_time(formatted)
-    assert type(result) == dt.time
+    assert type(result) is dt.time
     assert_time_equal(result, t)
 
 
@@ -224,7 +225,7 @@ def test_from_iso_date():
     d = dt.date(2014, 8, 21)
     iso_date = d.isoformat()
     result = utils.from_iso_date(iso_date)
-    assert type(result) == dt.date
+    assert type(result) is dt.date
     assert_date_equal(result, d)
 
 
@@ -237,7 +238,7 @@ def test_from_iso_date():
 )
 def test_from_timestamp(value, expected):
     result = utils.from_timestamp(value)
-    assert type(result) == dt.datetime
+    assert type(result) is dt.datetime
     assert result == expected
 
 
@@ -249,7 +250,7 @@ def test_from_timestamp_with_negative_value():
 
 def test_from_timestamp_with_overflow_value():
     value = 9223372036854775
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="out of range"):
         utils.from_timestamp(value)
 
 
@@ -271,7 +272,7 @@ def test_get_func_args():
 
 # Regression test for https://github.com/marshmallow-code/marshmallow/issues/540
 def test_function_field_using_type_annotation():
-    def get_split_words(value: str):  # noqa
+    def get_split_words(value: str):
         return value.split(";")
 
     class MySchema(Schema):
