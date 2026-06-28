@@ -1,3 +1,11 @@
+python-marshmallow (3.26.2-0+deb13u1) trixie; urgency=medium
+
+  * Non-maintainer upload.
+  * New upstream release.
+    - CVE-2025-68480: DoS with Schema.load(many)  (Closes: #1123888)
+
+ -- Adrian Bunk <bunk@debian.org>  Sun, 28 Jun 2026 11:20:03 +0300
+
 python-marshmallow (3.26.1-0.2) unstable; urgency=medium
 
   * Non-maintainer upload.
